@@ -1,0 +1,4 @@
+name: auditstage
+runtime: nodejs
+description: Deploy AWS infra from JSON config
+stackConfigDir: pulumi

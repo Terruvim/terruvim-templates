@@ -1,0 +1,3 @@
+config:
+  aws:profile: auditstage-prod
+  aws:region: eu-central-1

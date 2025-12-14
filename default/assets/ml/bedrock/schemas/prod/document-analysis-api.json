@@ -1,0 +1,66 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Document Analysis API",
+    "description": "API for AI-powered document analysis in audit workflows",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/analyze-document": {
+      "post": {
+        "description": "Analyze a document for audit purposes using AI",
+        "parameters": [
+          {
+            "name": "document_s3_key",
+            "in": "query",
+            "description": "S3 key of the document to analyze",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "analysis_type",
+            "in": "query",
+            "description": "Type of analysis to perform",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["comprehensive", "financial", "risk", "compliance"],
+              "default": "comprehensive"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document analysis completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "analysis": {
+                      "type": "string",
+                      "description": "Detailed analysis results"
+                    },
+                    "document_type": {
+                      "type": "string",
+                      "description": "Detected document type"
+                    },
+                    "risk_factors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Identified risk factors"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+config:
+  aws:profile: auditstage-orgmaster
+  aws:region: eu-central-1

@@ -1,0 +1,178 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - echo "🔧 Installing dependencies..."
+      - ls -la
+      - '[ ! -x "$(command -v yarn)" ] && npm install -g yarn || echo "Yarn already installed"'
+      - yarn install --frozen-lockfile
+
+  pre_build:
+    commands:
+      - '[ -f ".env.$VITE_ENV" ] && cp ".env.$VITE_ENV" .env || echo "No env file for $VITE_ENV"'
+      - echo "🔍 Preparing SonarCloud analysis..."
+      - |
+        if [ "${SONAR_ENABLED}" = "true" ] && [ -n "${SONAR_TOKEN}" ]; then
+          echo "Installing SonarCloud scanner..."
+          
+          export SONAR_SCANNER_VERSION=7.2.0.5079
+          export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
+          
+          curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
+          unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+          
+          export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+          export SONAR_SCANNER_OPTS="-server"
+          
+          echo "SonarCloud scanner v7.2.0.5079 installed successfully"
+        else
+          echo "SonarCloud analysis is disabled (SONAR_ENABLED=${SONAR_ENABLED})"
+        fi
+
+  build:
+    commands:
+      - echo "🏗 Running build for environment $VITE_ENV..."
+      - |
+        echo "📝 Creating .env file for environment: $VITE_ENV"
+        
+        # Create or overwrite .env file with environment-specific variables
+        cat > .env << 'EOF'
+        NODE_ENV=${NODE_ENV}
+        VITE_API=${VITE_API_URL}
+        VITE_API_NO_API_VER=${VITE_API_NO_API_VER}
+        VITE_MUI_LICENSE_KEY=${VITE_MUI_LICENSE_KEY}
+        VITE_ENV=${VITE_ENV}
+        EOF
+        
+        # Add dev-specific variables if this is dev environment
+        if [ "$VITE_ENV" = "dev" ]; then
+          echo "VITE_WORKING_PAPER=${VITE_WORKING_PAPER}" >> .env
+          echo "VITE_DELIVERABLES=${VITE_DELIVERABLES}" >> .env
+        fi
+        
+        echo "✅ .env file created successfully:"
+        echo "--- .env file contents ---"
+        cat .env
+        echo "--- end of .env file ---"
+      # - yarn build:$VITE_ENV
+      - yarn ci:build
+      - echo "✅ Build completed successfully"
+      - |
+        if [ "${SONAR_ENABLED}" = "true" ] && [ -n "${SONAR_TOKEN}" ]; then
+          echo "🔍 Running SonarCloud analysis..."
+          
+          # Create sonar-project.properties with official parameters
+          echo "sonar.organization=${SONAR_ORGANIZATION}" > sonar-project.properties
+          echo "sonar.projectKey=${SONAR_PROJECT_KEY}" >> sonar-project.properties
+          echo "sonar.sources=." >> sonar-project.properties
+          echo "sonar.host.url=https://sonarcloud.io" >> sonar-project.properties
+          
+          # Additional optional settings
+          echo "sonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/*.test.js,**/*.test.jsx,**/*.test.ts,**/*.test.tsx" >> sonar-project.properties
+          echo "sonar.javascript.lcov.reportPaths=coverage/lcov.info" >> sonar-project.properties
+          echo "sonar.typescript.lcov.reportPaths=coverage/lcov.info" >> sonar-project.properties
+          
+          echo "✅ SonarCloud configuration created"
+          echo "Configuration contents:"
+          cat sonar-project.properties
+        else
+          echo "⏭️ Skipping SonarCloud analysis (SONAR_ENABLED=${SONAR_ENABLED})"
+        fi
+      - |
+        if [ "${SONAR_ENABLED}" = "true" ] && [ -n "${SONAR_TOKEN}" ]; then
+          # Run tests with coverage if available
+          if grep -q '"test"' package.json; then
+            echo "Running tests with coverage..."
+            yarn test --coverage --ci --testResultsProcessor=jest-sonar-reporter || echo "Tests failed, continuing..."
+          fi
+        fi
+      - |
+        if [ "${SONAR_ENABLED}" = "true" ] && [ -n "${SONAR_TOKEN}" ]; then
+          # Run SonarCloud analysis with official parameters
+          echo "Executing SonarCloud scan..."
+          sonar-scanner \
+            -Dsonar.organization=${SONAR_ORGANIZATION} \
+            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=${SONAR_TOKEN} || echo "SonarCloud analysis completed with warnings"
+          echo "✅ SonarCloud analysis completed"
+        fi
+
+  post_build:
+    commands:
+      # - echo "📤 Deploying to S3 and CloudFront..."
+      # - ls -la
+      # - aws s3 sync ${VITE_ENV} "s3://$S3_BUCKET_NAME" --delete --exact-timestamps
+      # - aws s3 cp "s3://$S3_BUCKET_NAME" "s3://$S3_BUCKET_NAME" --recursive --exclude "*" --include "*.js" --include "*.css" --cache-control "public, max-age=31536000, immutable" --metadata-directive REPLACE
+      # - aws s3 cp "s3://$S3_BUCKET_NAME" "s3://$S3_BUCKET_NAME" --recursive --exclude "*" --include "*.html" --cache-control "public, max-age=0, must-revalidate" --metadata-directive REPLACE
+      # - aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" --paths "/*"
+      # - echo "✅ Deployment completed successfully"
+
+
+
+      # - echo "📤 Deploying to S3 and CloudFront..."
+      # - ls -la
+      # - aws s3 sync ${VITE_ENV} "s3://$S3_BUCKET_NAME" --delete --exact-timestamps
+      # - aws s3 cp "s3://$S3_BUCKET_NAME" "s3://$S3_BUCKET_NAME" --recursive --exclude "*" --include "*.js" --include "*.css" --cache-control "public, max-age=31536000, immutable" --metadata-directive REPLACE
+      # - aws s3 cp "s3://$S3_BUCKET_NAME" "s3://$S3_BUCKET_NAME" --recursive --exclude "*" --include "*.html" --cache-control "public, max-age=0, must-revalidate" --metadata-directive REPLACE
+      # - aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" --paths "/*"
+      # - echo "✅ Deployment completed successfully"
+      
+      - echo "📤 Deploying to S3 and CloudFront..."
+
+      # 1) Длинный кэш для статических ассетов (кроме .html)
+      - aws s3 sync ${VITE_ENV} "s3://$S3_BUCKET_NAME" --delete --exact-timestamps --exclude "*.html" --cache-control "public,max-age=31536000,immutable"
+
+      # 2) Короткий кэш для HTML, с ЯВНЫМ типом text/html
+      - aws s3 cp ${VITE_ENV} "s3://$S3_BUCKET_NAME" --recursive --exclude "*" --include "*.html" --cache-control "no-cache" --content-type "text/html"
+
+      # 3) Инвалидация
+      - aws cloudfront create-invalidation --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" --paths "/*"
+      - echo "✅ Deployment completed successfully"
+      - |
+        if [ "${SONAR_ENABLED}" = "true" ] && [ -f ".scannerwork/report-task.txt" ]; then
+          echo "📊 SonarCloud Analysis Results:"
+          echo "================================"
+          cat .scannerwork/report-task.txt
+          echo ""
+          echo "🔗 View detailed report at: https://sonarcloud.io/project/overview?id=${SONAR_PROJECT_KEY}"
+        fi
+
+
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: ${VITE_ENV}
+  name: frontend-build-$(date +%Y-%m-%d-%H-%M-%S)
+  secondary-artifacts:
+    sonar_reports:
+      files:
+        - '.scannerwork/**/*'
+        - 'sonar-project.properties'
+        - 'coverage/**/*'
+      base-directory: '.'
+      name: sonar-reports-$(date +%Y-%m-%d-%H-%M-%S)
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - '.yarn/**/*'
+
+reports:
+  sonarqube_reports:
+    files:
+      - '.scannerwork/report-task.txt'
+      - 'sonar-project.properties'
+    base-directory: '.'
+    file-format: 'GENERICTEST'
+  coverage_reports:
+    files:
+      - 'coverage/lcov.info'
+      - 'coverage/cobertura-coverage.xml'
+    base-directory: '.'
+    file-format: 'COBERTURAXML'

@@ -1,0 +1,4 @@
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCh3Clr3lUTIPtzICLdvP3RQvwctTCBCQ4UooYQEJGSbrhYC1NDLpEOhk6HIanG3MTYT23t4xZnWxl1sbziMzO/anP1vCOcSxWTPALOeuGDTdY4HPGblByDfsZ7OMlcyUMipaXqlAtwbjBfbZw80RTKgS1V1EpHa741DDF4xsosgDdwob0w7MEPjsNCLVtXzPuv0IACgjFf0HA804NMAXnjCJf7DDDmOq0EG0NeDlNuBsmrSEovgAyjA+I2xzygDQna9vRqtfkvkxAHv5F26kYaw19Mr/ob+qNoTMM2TsE6m7/ZLGPkbHUIb9QhGzN3lU9QmZDDmNRFDg4Tbmv0E4XH bastion-bastion
+
+
+ssh -i "bastion-bastion" -N -L 5431:tf-20250822152942744700000003.cluster-cv064oqsazms.eu-central-1.rds.amazonaws.com:5432 ec2-user@3.76.251.0

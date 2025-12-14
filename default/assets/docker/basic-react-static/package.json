@@ -1,0 +1,47 @@
+{
+  "name": "terruvim-frontend-stub",
+  "version": "1.0.0",
+  "description": "Frontend infrastructure stub for Terruvim platform",
+  "homepage": ".",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "deploy": "npm run build && bash deploy-stub.sh"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "keywords": [
+    "terruvim",
+    "frontend",
+    "react",
+    "cloudfront",
+    "aws",
+    "infrastructure"
+  ],
+  "author": "Terruvim Team",
+  "license": "MIT"
+}
