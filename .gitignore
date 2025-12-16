@@ -1,0 +1,29 @@
+# Node.js dependencies
+node_modules/
+
+# Pulumi files
+# *.pulumi/
+# Pulumi.*
+# .pulumi/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Build artifacts
+dist/
+build/
+
+# IDE files
+.vscode/
+.idea/
+.DS_Store
+
+# Terruvim
+.pub
+terruvim/assets/keys/
+generated.merged.flat.json
+generated.merged.nested.json
