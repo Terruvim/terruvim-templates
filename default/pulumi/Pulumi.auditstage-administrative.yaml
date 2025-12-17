@@ -1,3 +1,0 @@
-config:
-  aws:profile: auditstage-administrative
-  aws:region: eu-central-1
