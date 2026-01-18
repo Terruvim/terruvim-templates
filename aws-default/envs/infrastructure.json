@@ -36,23 +36,7 @@
       "backendRepoName": "{{{your-backend-repo}}}",
       "backendBranch": "{{{main}}}"
     },
-    "providers": {
-      "root": {
-        "id": "provider-root",
-        "region": "us-east-1",
-        "profile": "demo-dev"
-      },
-      "dev": {
-        "id": "provider-dev",
-        "region": "us-east-1",
-        "profile": "demo-dev"
-      },
-      "dev-us-east-1": {
-        "id": "provider-dev-us-east-1",
-        "region": "us-east-1",
-        "profile": "demo-dev"
-      }
-    },
+    "providers": {},
     "overlays": [
       "dev",
       "stage",
