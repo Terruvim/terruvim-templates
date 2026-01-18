@@ -1,5 +1,2943 @@
 {
   "📦[resources]": {
-    "🔖[DEVOPS/MONITORING]": {}
+    "🔖[DEVOPS/MONITORING]": {
+      "📁[CICD]": {
+        "l3_s3Factory": [
+          {
+            "enabled": "${meta.featureFlags.FLAG_codepipeline-artifacts-bucket}",
+            "id": "codepipeline-artifacts-bucket",
+            "outputs": {
+              "id": true,
+              "arn": true,
+              "bucketName": true,
+              "bucketArn": true
+            },
+            "inputs": {},
+            "dependsOn": [],
+            "configuration": {
+              "bucket": "${meta.variables.project}-${meta.environment}-codepipeline-artifacts",
+              "acl": "private",
+              "versioning": {
+                "enabled": true
+              },
+              "encryption": {
+                "enabled": true,
+                "algorithm": "AES256"
+              },
+              "lifecycle": {
+                "enabled": true,
+                "rules": [
+                  {
+                    "id": "codepipeline-artifacts-lifecycle",
+                    "enabled": true,
+                    "transitions": [
+                      {
+                        "days": 30,
+                        "storageClass": "STANDARD_IA"
+                      }
+                    ],
+                    "expiration": {
+                      "days": 90
+                    }
+                  }
+                ]
+              },
+              "publicAccessBlock": {
+                "blockPublicAcls": true,
+                "blockPublicPolicy": true,
+                "ignorePublicAcls": true,
+                "restrictPublicBuckets": true
+              },
+              "tags": {
+                "Project": "${meta.variables.project}",
+                "Environment": "${meta.environment}",
+                "Service": "CodePipeline",
+                "Purpose": "Artifacts Storage"
+              }
+            }
+          }
+        ],
+        "l3_codeStarConnectionFactory": [
+          {
+            "enabled": "${meta.featureFlags.FLAG_github-codestar-connection}",
+            "id": "github-codestar-connection",
+            "outputs": {
+              "arn": true,
+              "name": true
+            },
+            "inputs": {},
+            "dependsOn": [],
+            "configuration": {
+              "providerType": "GitHub",
+              "tags": {
+                "Project": "${meta.variables.project}",
+                "Environment": "${meta.environment}",
+                "Owner": "${meta.variables.owner}"
+              }
+            }
+          }
+        ]
+      },
+      "📁[ROLES]": {
+        "l3_iamRolesFactory": [
+          {
+            "enabled": "${meta.featureFlags.FLAG_cloudfront-service-role}",
+            "id": "cloudfront-service-role",
+            "outputs": {
+              "arn": true
+            },
+            "inputs": {},
+            "dependsOn": [],
+            "configuration": {
+              "name": "cloudfront-service-role",
+              "assumeRolePolicy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": "codebuild.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              },
+              "policyStatements": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:CreateNetworkInterface",
+                    "ec2:DescribeNetworkInterfaces",
+                    "ec2:DescribeSecurityGroups",
+                    "ec2:DescribeSubnets",
+                    "ec2:DescribeVpcs",
+                    "ec2:DeleteNetworkInterface",
+                    "ec2:CreateNetworkInterfacePermission"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          },
+          {
+            "enabled": "${meta.featureFlags.FLAG_cloudfront-pipeline-role}",
+            "id": "cloudfront-pipeline-role",
+            "outputs": {
+              "arn": true
+            },
+            "inputs": {},
+            "dependsOn": [],
+            "configuration": {
+              "name": "cloudfront-pipeline-role",
+              "assumeRolePolicy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": "codepipeline.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                  }
+                ]
+              },
+              "policyStatements": [
+                {
+                  "Effect": "Allow",
+                  "Action": "*",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ec2:CreateNetworkInterface",
+                    "ec2:DescribeNetworkInterfaces",
+                    "ec2:DescribeSecurityGroups",
+                    "ec2:DescribeSubnets",
+                    "ec2:DescribeVpcs",
+                    "ec2:DeleteNetworkInterface",
+                    "ec2:CreateNetworkInterfacePermission"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "📁[LOGS]": {
+        "l3_cloudWatchLogGroupFactory": [
+          {
+            "enabled": "${meta.featureFlags.FLAG_application-logs-group}",
+            "id": "application-logs-group",
+            "inputs": {},
+            "outputs": {
+              "arn": true,
+              "name": true,
+              "dataProtectionPolicyExists": true
+            },
+            "dependsOn": [
+              "security-audit-logs"
+            ],
+            "configuration": {
+              "name": "/aws/application/${meta.variables.project}-${meta.environment}",
+              "retentionInDays": 365,
+              "dataProtection": {
+                "enabled": false,
+                "enableAudit": false,
+                "enableRedaction": false,
+                "dataIdentifiers": [
+                  "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                  "arn:aws:dataprotection::aws:data-identifier/AwsSecretKey",
+                  "arn:aws:dataprotection::aws:data-identifier/CreditCardNumber",
+                  "arn:aws:dataprotection::aws:data-identifier/PhoneNumber-US"
+                ],
+                "operations": {
+                  "audit": {
+                    "enabled": true,
+                    "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                  },
+                  "redaction": {
+                    "enabled": true,
+                    "maskConfig": {
+                      "MaskConfig": {}
+                    }
+                  }
+                }
+              },
+              "tags": {
+                "Project": "${meta.variables.project}",
+                "Environment": "${meta.environment}",
+                "Purpose": "Application Logs",
+                "DataProtection": "Enabled"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "🔖[NETWORKING]": {
+      "🧩[VPC]": {
+        "🟣[main]": {
+          "l4_basicNetworkingFactory": [
+            {
+              "enabled": "${meta.featureFlags.FLAG_main-networking}",
+              "id": "main-networking",
+              "inputs": {},
+              "outputs": {
+                "vpcId": true,
+                "subnetIds": true,
+                "publicSubnetIds": true,
+                "privateSubnetIds": true,
+                "isolatedSubnetIds": true,
+                "natGatewayIds": true,
+                "securityGroupIds": true,
+                "vpcEndpointIds": true,
+                "flowLogId": true,
+                "networkAclIds": true,
+                "defaultSecurityGroupId": true
+              },
+              "dependsOn": [],
+              "configuration": {
+                "vpc": {
+                  "cidrBlock": "${meta.variables.cidrMain}",
+                  "enableDnsSupport": true,
+                  "enableDnsHostnames": true,
+                  "instanceTenancy": "default",
+                  "tags": {
+                    "Name": "Secure-VPC",
+                    "Environment": "${meta.environment}",
+                    "SecurityLevel": "High",
+                    "LastUpdate": "2025-08-06-factory-update"
+                  }
+                },
+                "subnets": [
+                  {
+                    "name": "public-a",
+                    "cidrBlock": "${meta.variables.cidrSubnetPublicA}",
+                    "availabilityZone": "${meta.variables.region}a",
+                    "type": "public",
+                    "mapPublicIpOnLaunch": false,
+                    "tags": {
+                      "Name": "Public-A",
+                      "Tier": "public"
+                    }
+                  },
+                  {
+                    "name": "public-b",
+                    "cidrBlock": "${meta.variables.cidrSubnetPublicB}",
+                    "availabilityZone": "${meta.variables.region}b",
+                    "type": "public",
+                    "mapPublicIpOnLaunch": false,
+                    "tags": {
+                      "Name": "Public-B",
+                      "Tier": "public"
+                    }
+                  },
+                  {
+                    "name": "private-a",
+                    "cidrBlock": "${meta.variables.cidrSubnetPrivateA}",
+                    "availabilityZone": "${meta.variables.region}a",
+                    "type": "private",
+                    "tags": {
+                      "Name": "Private-A",
+                      "Tier": "private"
+                    }
+                  },
+                  {
+                    "name": "private-b",
+                    "cidrBlock": "${meta.variables.cidrSubnetPrivateB}",
+                    "availabilityZone": "${meta.variables.region}b",
+                    "type": "private",
+                    "tags": {
+                      "Name": "Private-B",
+                      "Tier": "private"
+                    }
+                  },
+                  {
+                    "name": "database-a",
+                    "cidrBlock": "${meta.variables.cidrSubnetDatabaseA}",
+                    "availabilityZone": "${meta.variables.region}a",
+                    "type": "isolated",
+                    "tags": {
+                      "Name": "Database-A",
+                      "Tier": "database"
+                    }
+                  },
+                  {
+                    "name": "database-b",
+                    "cidrBlock": "${meta.variables.cidrSubnetDatabaseB}",
+                    "availabilityZone": "${meta.variables.region}b",
+                    "type": "isolated",
+                    "tags": {
+                      "Name": "Database-B",
+                      "Tier": "database"
+                    }
+                  }
+                ],
+                "natGateways": {
+                  "enabled": true,
+                  "perAz": true
+                },
+                "internetGateway": {
+                  "enabled": true
+                },
+                "routeTables": [
+                  {
+                    "name": "public",
+                    "routes": [
+                      {
+                        "cidrBlock": "0.0.0.0/0",
+                        "gatewayType": "igw"
+                      }
+                    ],
+                    "subnetNames": [
+                      "public-a",
+                      "public-b"
+                    ],
+                    "tags": {
+                      "Name": "Public-Route-Table"
+                    }
+                  },
+                  {
+                    "name": "private-a",
+                    "routes": [
+                      {
+                        "cidrBlock": "0.0.0.0/0",
+                        "gatewayType": "nat",
+                        "natGatewayAz": "${meta.variables.region}a"
+                      }
+                    ],
+                    "subnetNames": [
+                      "private-a"
+                    ],
+                    "tags": {
+                      "Name": "Private-A-Route-Table"
+                    }
+                  },
+                  {
+                    "name": "private-b",
+                    "routes": [
+                      {
+                        "cidrBlock": "0.0.0.0/0",
+                        "gatewayType": "nat",
+                        "natGatewayAz": "${meta.variables.region}b"
+                      }
+                    ],
+                    "subnetNames": [
+                      "private-b"
+                    ],
+                    "tags": {
+                      "Name": "Private-B-Route-Table"
+                    }
+                  },
+                  {
+                    "name": "database",
+                    "routes": [],
+                    "subnetNames": [
+                      "database-a",
+                      "database-b"
+                    ],
+                    "tags": {
+                      "Name": "Database-Route-Table"
+                    }
+                  }
+                ],
+                "vpcFlowLogs": {
+                  "enabled": true,
+                  "trafficType": "ALL",
+                  "destination": "cloudwatch",
+                  "retentionInDays": 365,
+                  "logGroupName": "vpc-flow-logs-secure",
+                  "iamRoleName": "vpc-flow-logs-role",
+                  "dataProtection": {
+                    "enabled": false,
+                    "enableAudit": true,
+                    "enableRedaction": true,
+                    "dataIdentifiers": [
+                      "arn:aws:dataprotection::aws:data-identifier/IpAddress",
+                      "arn:aws:dataprotection::aws:data-identifier/EmailAddress"
+                    ],
+                    "operations": {
+                      "audit": {
+                        "enabled": true,
+                        "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                      },
+                      "redaction": {
+                        "enabled": true,
+                        "maskConfig": {
+                          "MaskConfig": {}
+                        }
+                      }
+                    }
+                  }
+                },
+                "securityGroups": [
+                  {
+                    "name": "default-restrict",
+                    "description": "Restricted default security group - blocks all traffic",
+                    "ingress": [],
+                    "egress": []
+                  },
+                  {
+                    "name": "web-tier",
+                    "description": "Security group for web tier - HTTPS only",
+                    "ingress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 443,
+                        "toPort": 443,
+                        "cidrBlocks": [
+                          "0.0.0.0/0"
+                        ],
+                        "description": "HTTPS from internet"
+                      },
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 80,
+                        "toPort": 80,
+                        "cidrBlocks": [
+                          "0.0.0.0/0"
+                        ],
+                        "description": "HTTP from internet (redirect to HTTPS)"
+                      }
+                    ],
+                    "egress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 443,
+                        "toPort": 443,
+                        "cidrBlocks": [
+                          "0.0.0.0/0"
+                        ],
+                        "description": "HTTPS to internet"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "app-tier",
+                    "description": "Security group for application tier",
+                    "ingress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 8080,
+                        "toPort": 8080,
+                        "cidrBlocks": [
+                          "${meta.variables.cidrSubnetPublicA}",
+                          "${meta.variables.cidrSubnetPublicB}"
+                        ],
+                        "description": "App port from public subnets (ALB) only"
+                      }
+                    ],
+                    "egress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 443,
+                        "toPort": 443,
+                        "cidrBlocks": [
+                          "0.0.0.0/0"
+                        ],
+                        "description": "HTTPS to internet"
+                      },
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 5432,
+                        "toPort": 5432,
+                        "cidrBlocks": [
+                          "${meta.variables.cidrMain}"
+                        ],
+                        "description": "PostgreSQL to VPC"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "db-tier",
+                    "description": "Security group for database tier",
+                    "ingress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 5432,
+                        "toPort": 5432,
+                        "cidrBlocks": [
+                          "${meta.variables.cidrMain}"
+                        ],
+                        "description": "PostgreSQL from VPC only"
+                      }
+                    ],
+                    "egress": []
+                  },
+                  {
+                    "name": "alb-sg",
+                    "description": "Application Load Balancer Security Group - HTTPS only",
+                    "ingress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 443,
+                        "toPort": 443,
+                        "cidrBlocks": [
+                          "0.0.0.0/0"
+                        ],
+                        "description": "HTTPS from internet"
+                      },
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 80,
+                        "toPort": 80,
+                        "cidrBlocks": [
+                          "0.0.0.0/0"
+                        ],
+                        "description": "HTTP redirect to HTTPS"
+                      }
+                    ],
+                    "egress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 8080,
+                        "toPort": 8080,
+                        "cidrBlocks": [
+                          "${meta.variables.cidrMain}"
+                        ],
+                        "description": "To application tier"
+                      }
+                    ],
+                    "tags": {
+                      "Name": "ALB-SecurityGroup",
+                      "Tier": "loadbalancer"
+                    }
+                  },
+                  {
+                    "name": "app-sg",
+                    "description": "Application tier - restrictive access",
+                    "ingress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 8080,
+                        "toPort": 8080,
+                        "cidrBlocks": [
+                          "${meta.variables.cidrSubnetPublicA}",
+                          "${meta.variables.cidrSubnetPublicB}"
+                        ],
+                        "description": "App port from public subnets (ALB) only"
+                      }
+                    ],
+                    "egress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 443,
+                        "toPort": 443,
+                        "cidrBlocks": [
+                          "0.0.0.0/0"
+                        ],
+                        "description": "HTTPS to internet for API calls"
+                      },
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 5432,
+                        "toPort": 5432,
+                        "cidrBlocks": [
+                          "${meta.variables.cidrSubnetDatabaseA}",
+                          "${meta.variables.cidrSubnetDatabaseB}"
+                        ],
+                        "description": "PostgreSQL to database subnets only"
+                      }
+                    ],
+                    "tags": {
+                      "Name": "App-SecurityGroup",
+                      "Tier": "application"
+                    }
+                  },
+                  {
+                    "name": "db-sg",
+                    "description": "Database tier - internal access only",
+                    "ingress": [
+                      {
+                        "protocol": "tcp",
+                        "fromPort": 5432,
+                        "toPort": 5432,
+                        "cidrBlocks": [
+                          "${meta.variables.cidrSubnetPrivateA}",
+                          "${meta.variables.cidrSubnetPrivateB}"
+                        ],
+                        "description": "PostgreSQL from private subnets only"
+                      }
+                    ],
+                    "egress": [],
+                    "tags": {
+                      "Name": "Database-SecurityGroup",
+                      "Tier": "database"
+                    }
+                  }
+                ],
+                "vpcEndpoints": [
+                  {
+                    "service": "s3",
+                    "type": "Gateway"
+                  },
+                  {
+                    "service": "logs",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "secretsmanager",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "ssm",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "ssmmessages",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "ec2messages",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "monitoring",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "codebuild",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "codepipeline",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "codecommit",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "git-codecommit",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "ecr.api",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "ecr.dkr",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "sts",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ],
+                    "allowFromVpcCidr": true
+                  },
+                  {
+                    "service": "events",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "sns",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ]
+                  },
+                  {
+                    "service": "ec2",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ],
+                    "allowFromVpcCidr": true
+                  },
+                  {
+                    "service": "elasticloadbalancing",
+                    "type": "Interface",
+                    "subnets": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "securityGroupNames": [
+                      "app-tier",
+                      "app-sg"
+                    ],
+                    "allowFromVpcCidr": true
+                  }
+                ],
+                "networkAcls": [
+                  {
+                    "name": "public-nacl",
+                    "subnetNames": [
+                      "public-a",
+                      "public-b"
+                    ],
+                    "ingress": [
+                      {
+                        "ruleNumber": 100,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 80,
+                        "toPort": 80
+                      },
+                      {
+                        "ruleNumber": 110,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 443,
+                        "toPort": 443
+                      },
+                      {
+                        "ruleNumber": 120,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 22,
+                        "toPort": 22
+                      },
+                      {
+                        "ruleNumber": 130,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 1024,
+                        "toPort": 65535
+                      }
+                    ],
+                    "egress": [
+                      {
+                        "ruleNumber": 100,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 80,
+                        "toPort": 80
+                      },
+                      {
+                        "ruleNumber": 110,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 443,
+                        "toPort": 443
+                      },
+                      {
+                        "ruleNumber": 120,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrMain}",
+                        "fromPort": 1024,
+                        "toPort": 65535
+                      }
+                    ],
+                    "tags": {
+                      "Name": "Public-NACL",
+                      "Tier": "public"
+                    }
+                  },
+                  {
+                    "name": "private-nacl",
+                    "subnetNames": [
+                      "private-a",
+                      "private-b"
+                    ],
+                    "ingress": [
+                      {
+                        "ruleNumber": 100,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrMain}",
+                        "fromPort": 8080,
+                        "toPort": 8080
+                      },
+                      {
+                        "ruleNumber": 110,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 1024,
+                        "toPort": 65535
+                      },
+                      {
+                        "ruleNumber": 120,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrMain}",
+                        "fromPort": 22,
+                        "toPort": 22
+                      }
+                    ],
+                    "egress": [
+                      {
+                        "ruleNumber": 100,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 443,
+                        "toPort": 443
+                      },
+                      {
+                        "ruleNumber": 110,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrSubnetDatabaseA}",
+                        "fromPort": 5432,
+                        "toPort": 5432
+                      },
+                      {
+                        "ruleNumber": 120,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrSubnetDatabaseB}",
+                        "fromPort": 5432,
+                        "toPort": 5432
+                      }
+                    ],
+                    "tags": {
+                      "Name": "Private-NACL",
+                      "Tier": "private"
+                    }
+                  },
+                  {
+                    "name": "database-nacl",
+                    "subnetNames": [
+                      "database-a",
+                      "database-b"
+                    ],
+                    "ingress": [
+                      {
+                        "ruleNumber": 100,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrSubnetPrivateA}",
+                        "fromPort": 5432,
+                        "toPort": 5432
+                      },
+                      {
+                        "ruleNumber": 110,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrSubnetPrivateB}",
+                        "fromPort": 5432,
+                        "toPort": 5432
+                      },
+                      {
+                        "ruleNumber": 120,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrSubnetPrivateA}",
+                        "fromPort": 1024,
+                        "toPort": 65535
+                      },
+                      {
+                        "ruleNumber": 130,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrSubnetPrivateB}",
+                        "fromPort": 1024,
+                        "toPort": 65535
+                      }
+                    ],
+                    "egress": [
+                      {
+                        "ruleNumber": 100,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrSubnetPrivateA}",
+                        "fromPort": 1024,
+                        "toPort": 65535
+                      },
+                      {
+                        "ruleNumber": 110,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "${meta.variables.cidrSubnetPrivateB}",
+                        "fromPort": 1024,
+                        "toPort": 65535
+                      }
+                    ],
+                    "tags": {
+                      "Name": "Database-NACL",
+                      "Tier": "database"
+                    }
+                  }
+                ],
+                "securityEnhancements": {
+                  "enableFlowLogsForRejects": false,
+                  "enableVpcEndpointDnsResolution": true,
+                  "enablePrivateDnsForEndpoints": true,
+                  "defaultSecurityGroupRestrictions": true,
+                  "enableGuardDutyVpcFlowLogs": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "🔖[PERSISTANCE]": {
+      "📁[DATABASES]": {
+        "🧩[AURORA_SERVERLESS_V2": {
+          "🟣[networking]": {
+            "l3_securityGroupsFactory": [
+              {
+                "enabled": "${meta.featureFlags.FLAG_rds-sg}",
+                "id": "rds-sg",
+                "outputs": {
+                  "id": true
+                },
+                "inputs": {
+                  "vpcId": "${output:main-networking.vpcId}"
+                },
+                "dependsOn": [],
+                "configuration": {
+                  "description": "RDS SG"
+                }
+              },
+              {
+                "enabled": "${meta.featureFlags.FLAG_aurora-postgres-sg}",
+                "id": "aurora-postgres-sg",
+                "outputs": {
+                  "id": true
+                },
+                "inputs": {
+                  "vpcId": "${output:main-networking.vpcId}"
+                },
+                "dependsOn": [],
+                "configuration": {
+                  "description": "RDS SG"
+                }
+              }
+            ],
+            "l3_securityGroupRulesFactory": [
+              {
+                "enabled": "${meta.featureFlags.FLAG_aurora-postgres-sg}",
+                "id": "aurora-postgres-egress-ephemeral",
+                "outputs": {
+                  "id": true
+                },
+                "inputs": {
+                  "securityGroupId": "${output:aurora-postgres-sg.id}"
+                },
+                "dependsOn": [],
+                "configuration": {
+                  "securityGroupId": "${output:aurora-postgres-sg.id}",
+                  "type": "egress",
+                  "fromPort": 1024,
+                  "toPort": 65535,
+                  "protocol": "tcp",
+                  "cidrBlocks": [
+                    "${meta.variables.cidrMain}"
+                  ],
+                  "description": "Aurora PostgreSQL egress for ephemeral ports to VPC"
+                }
+              },
+              {
+                "enabled": "${meta.featureFlags.FLAG_aurora-postgres-sg}",
+                "id": "aurora-postgres-egress-postgres",
+                "outputs": {
+                  "id": true
+                },
+                "inputs": {
+                  "securityGroupId": "${output:aurora-postgres-sg.id}"
+                },
+                "dependsOn": [],
+                "configuration": {
+                  "securityGroupId": "${output:aurora-postgres-sg.id}",
+                  "type": "egress",
+                  "fromPort": 5432,
+                  "toPort": 5432,
+                  "protocol": "tcp",
+                  "cidrBlocks": [
+                    "${meta.variables.cidrMain}"
+                  ],
+                  "description": "Aurora PostgreSQL egress for replication and internal communication"
+                }
+              },
+              {
+                "enabled": "${meta.featureFlags.FLAG_aurora-postgres-sg}",
+                "id": "aurora-postgres-egress-all",
+                "outputs": {
+                  "id": true
+                },
+                "inputs": {
+                  "securityGroupId": "${output:aurora-postgres-sg.id}"
+                },
+                "dependsOn": [],
+                "configuration": {
+                  "securityGroupId": "${output:aurora-postgres-sg.id}",
+                  "type": "egress",
+                  "fromPort": 0,
+                  "toPort": 0,
+                  "protocol": "-1",
+                  "cidrBlocks": [
+                    "0.0.0.0/0"
+                  ],
+                  "description": "Aurora PostgreSQL egress for all traffic"
+                }
+              }
+            ]
+          },
+          "🟣[main]": {
+            "l3_auroraFactory": [
+              {
+                "enabled": "${meta.featureFlags.FLAG_aurora-postgres-cluster}",
+                "id": "aurora-postgres-cluster",
+                "inputs": {
+                  "vpcId": "${output:main-networking.vpcId}",
+                  "subnetIds": [
+                    "${output:main-networking.subnetIds[4]}",
+                    "${output:main-networking.subnetIds[5]}"
+                  ],
+                  "sgId": "${output:aurora-postgres-sg.id}"
+                },
+                "outputs": {
+                  "id": true,
+                  "endpoint": true,
+                  "arn": true,
+                  "sgId": true,
+                  "subnetGroupName": true,
+                  "clusterId": true
+                },
+                "dependsOn": [
+                  "main-networking",
+                  "aurora-postgres-sg"
+                ],
+                "configuration": {
+                  "engine": "aurora-postgresql",
+                  "engineVersion": "17.4",
+                  "engineMode": "serverless",
+                  "dbName": "${meta.variables.project}",
+                  "username": "${meta.variables.project}",
+                  "password": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}",
+                  "dbParameterGroupName": "${meta.variables.project}-aurora-postgres-params",
+                  "parameterGroupFamily": "aurora-postgresql17",
+                  "parameters": [
+                    {
+                      "name": "shared_preload_libraries",
+                      "value": "pg_stat_statements"
+                    },
+                    {
+                      "name": "log_statement",
+                      "value": "all"
+                    },
+                    {
+                      "name": "log_min_duration_statement",
+                      "value": "1000"
+                    },
+                    {
+                      "name": "ssl",
+                      "value": "off"
+                    }
+                  ],
+                  "serverlessV2ScalingConfiguration": {
+                    "minCapacity": 0.5,
+                    "maxCapacity": 4
+                  },
+                  "storageEncrypted": true,
+                  "deletionProtection": true,
+                  "enableIAMDatabaseAuthentication": true,
+                  "copyTagsToSnapshot": true,
+                  "skipFinalSnapshot": false,
+                  "finalSnapshotIdentifier": "${meta.variables.project}-final-snapshot-${meta.environment}",
+                  "allowMajorVersionUpgrade": true,
+                  "performanceInsightsEnabled": true,
+                  "performanceInsightsRetentionPeriod": 731,
+                  "monitoringInterval": 60,
+                  "enabledCloudwatchLogsExports": [
+                    "postgresql"
+                  ],
+                  "cloudwatchLogsDataProtection": {
+                    "enabled": false,
+                    "enableAudit": true,
+                    "enableRedaction": false,
+                    "dataIdentifiers": [
+                      "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                      "arn:aws:dataprotection::aws:data-identifier/CreditCardNumber",
+                      "arn:aws:dataprotection::aws:data-identifier/PhoneNumber-US"
+                    ],
+                    "operations": {
+                      "audit": {
+                        "enabled": true,
+                        "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                      },
+                      "redaction": {
+                        "enabled": true,
+                        "maskConfig": {
+                          "MaskConfig": {}
+                        }
+                      }
+                    }
+                  },
+                  "backupRetentionPeriod": 35,
+                  "preferredBackupWindow": "03:00-04:00",
+                  "preferredMaintenanceWindow": "sun:04:00-sun:05:00",
+                  "networkType": "IPV4",
+                  "enableHttpEndpoint": false,
+                  "enableGlobalWriteForwarding": false,
+                  "tags": {
+                    "Project": "${meta.variables.project}",
+                    "Environment": "${meta.environment}",
+                    "Owner": "${meta.variables.owner}",
+                    "SecurityLevel": "High",
+                    "DataClassification": "Confidential",
+                    "BackupRequired": "true"
+                  }
+                },
+                "autoScaling": {
+                  "enabled": true,
+                  "minCapacity": 1,
+                  "maxCapacity": 3,
+                  "targetCpuUtilization": 70,
+                  "scaleInCooldown": 300,
+                  "scaleOutCooldown": 300
+                },
+                "crossRegionBackup": {
+                  "enabled": false,
+                  "enableLambdaBackups": false,
+                  "backupRegion": "${secret:${meta.variables.project}/global-secrets-base:BACKUP_REGION}",
+                  "globalDatabase": {
+                    "enabled": false,
+                    "globalClusterIdentifier": "global-${meta.environment}-${meta.variables.project}"
+                  },
+                  "snapshotCopy": {
+                    "enabled": true,
+                    "copyInterval": 24,
+                    "retentionPeriod": 365,
+                    "kmsKeyId": "alias/aws/rds"
+                  },
+                  "crossRegionBackups": {
+                    "enabled": true,
+                    "retentionPeriod": 365,
+                    "kmsKeyId": "alias/aws/rds"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "📁[BUCKETS]": {
+        "🧩[ASSETS]": {
+          "🟣[main]": {
+            "l3_s3Factory": [
+              {
+                "enabled": "${meta.featureFlags.FLAG_assets-bucket}",
+                "id": "assets-bucket",
+                "inputs": {},
+                "outputs": {
+                  "id": true,
+                  "arn": true,
+                  "bucket": true,
+                  "bucketName": true,
+                  "bucketArn": true
+                },
+                "dependsOn": [],
+                "configuration": {
+                  "bucket": "${meta.variables.project}-assets-bucket-${meta.environment}",
+                  "acl": "private",
+                  "versioning": {
+                    "enabled": true
+                  },
+                  "lifecycle": {
+                    "enabled": true,
+                    "_comment": "TODO Review lifecycle rules for assets bucket",
+                    "rules": [
+                      {
+                        "id": "assets-bucket-lifecycle",
+                        "enabled": true,
+                        "transitions": [
+                          {
+                            "days": 31,
+                            "storageClass": "STANDARD_IA"
+                          },
+                          {
+                            "days": 90,
+                            "storageClass": "GLACIER"
+                          },
+                          {
+                            "days": 365,
+                            "storageClass": "DEEP_ARCHIVE"
+                          }
+                        ],
+                        "expiration": {
+                          "days": 2557
+                        }
+                      }
+                    ]
+                  },
+                  "replication": {
+                    "enabled": false,
+                    "destinationRegion": "${secret:${meta.variables.project}/global-secrets-base:BACKUP_REGION}",
+                    "destinationBucket": "${meta.variables.project}-assets-bucket-backup-${meta.environment}",
+                    "storageClass": "STANDARD_IA"
+                  },
+                  "tags": {
+                    "Project": "${meta.variables.project}",
+                    "Environment": "${meta.environment}"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "🔖[INGRESS]": {
+      "🧩[ALB]": {
+        "🟣[networking]": {
+          "l3_securityGroupsFactory": [
+            {
+              "enabled": "${meta.featureFlags.FLAG_alb-sg}",
+              "id": "alb-sg",
+              "outputs": {
+                "id": true
+              },
+              "inputs": {
+                "vpcId": "${output:main-networking.vpcId}"
+              },
+              "dependsOn": [
+                "main-networking"
+              ],
+              "configuration": {
+                "description": "ALB SG"
+              }
+            }
+          ],
+          "l3_securityGroupRulesFactory": [
+            {
+              "enabled": "${meta.featureFlags.FLAG_from-ingress-http-to-alb}",
+              "id": "from-ingress-http-to-alb",
+              "outputs": {
+                "id": true
+              },
+              "inputs": {
+                "securityGroupId": "${output:alb-sg.id}"
+              },
+              "dependsOn": [],
+              "configuration": {
+                "securityGroupId": "${output:alb-sg.id}",
+                "type": "ingress",
+                "fromPort": 8080,
+                "toPort": 8080,
+                "protocol": "tcp",
+                "cidrBlocks": [
+                  "0.0.0.0/0"
+                ]
+              }
+            },
+            {
+              "enabled": "${meta.featureFlags.FLAG_from-ingress-http-eight-to-alb}",
+              "id": "from-ingress-http-eight-to-alb",
+              "outputs": {
+                "id": true
+              },
+              "inputs": {
+                "securityGroupId": "${output:alb-sg.id}"
+              },
+              "dependsOn": [],
+              "configuration": {
+                "securityGroupId": "${output:alb-sg.id}",
+                "type": "ingress",
+                "fromPort": 80,
+                "toPort": 80,
+                "protocol": "tcp",
+                "cidrBlocks": [
+                  "0.0.0.0/0"
+                ]
+              }
+            },
+            {
+              "enabled": "${meta.featureFlags.FLAG_from-ingress-https-to-alb}",
+              "id": "from-ingress-https-to-alb",
+              "outputs": {
+                "id": true
+              },
+              "inputs": {
+                "securityGroupId": "${output:alb-sg.id}"
+              },
+              "dependsOn": [],
+              "configuration": {
+                "securityGroupId": "${output:alb-sg.id}",
+                "type": "ingress",
+                "fromPort": 443,
+                "toPort": 443,
+                "protocol": "tcp",
+                "cidrBlocks": [
+                  "0.0.0.0/0"
+                ]
+              }
+            },
+            {
+              "enabled": "${meta.featureFlags.FLAG_from-egress-all-to-alb}",
+              "id": "from-egress-all-to-alb",
+              "outputs": {
+                "id": true
+              },
+              "inputs": {
+                "securityGroupId": "${output:alb-sg.id}"
+              },
+              "dependsOn": [],
+              "configuration": {
+                "securityGroupId": "${output:alb-sg.id}",
+                "type": "egress",
+                "fromPort": 0,
+                "toPort": 0,
+                "protocol": "-1",
+                "cidrBlocks": [
+                  "0.0.0.0/0"
+                ]
+              }
+            }
+          ]
+        },
+        "🟣[main]": {
+          "l4_albFactory": [
+            {
+              "enabled": "${meta.featureFlags.FLAG_alb}",
+              "id": "alb",
+              "inputs": {
+                "vpcId": "${output:main-networking.vpcId}",
+                "subnetIds": [
+                  "${output:main-networking.subnetIds[0]}",
+                  "${output:main-networking.subnetIds[1]}"
+                ],
+                "sgId": "${output:alb-sg.id}",
+                "route53Provider": "root"
+              },
+              "outputs": {
+                "listenerArn": true,
+                "httpsListenerArn": true,
+                "sgId": true,
+                "arn": true,
+                "name": true,
+                "targetGroupArn": true
+              },
+              "dependsOn": [
+                "alb-sg"
+              ],
+              "configuration": {
+                "domain": "application.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
+                "hostedZoneId": "${secret:${meta.variables.project}/global-secrets-base:HOSTED_ZONE_ID}",
+                "enableCertProvisioning": true,
+                "waf": {
+                  "enabled": false,
+                  "wafConfig": {
+                    "enabled": true,
+                    "useSecureDefaults": true,
+                    "rateLimiting": {
+                      "enabled": true,
+                      "limit": 5000,
+                      "action": "block"
+                    },
+                    "ipRestrictions": {
+                      "blockedIps": [],
+                      "allowedIps": []
+                    },
+                    "geoRestrictions": {
+                      "blockedCountries": [
+                        "CN",
+                        "RU",
+                        "KP",
+                        "IR"
+                      ],
+                      "allowedCountries": []
+                    },
+                    "managedRuleGroups": {
+                      "enableCommonRules": true,
+                      "enableKnownBadInputs": true,
+                      "enableSQLInjection": true,
+                      "enableXSS": true,
+                      "enableLinuxRules": true,
+                      "enableIpReputation": true,
+                      "enableAnonymousIp": true
+                    },
+                    "customRules": [
+                      {
+                        "name": "BlockAPIAbuse",
+                        "priority": 300,
+                        "regex": "/admin/|/config/|/system/",
+                        "action": "block",
+                        "description": "Block access to admin endpoints"
+                      },
+                      {
+                        "name": "MonitorLargeRequests",
+                        "priority": 310,
+                        "action": "count",
+                        "description": "Monitor unusually large requests"
+                      }
+                    ],
+                    "logging": {
+                      "enabled": true,
+                      "retentionDays": 365,
+                      "logGroupName": "aws-waf-logs-${meta.variables.project}-${meta.environment}-alb-waf",
+                      "dataProtection": {
+                        "enabled": false,
+                        "enableAudit": true,
+                        "enableRedaction": true,
+                        "dataIdentifiers": [
+                          "arn:aws:dataprotection::aws:data-identifier/IpAddress",
+                          "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                          "arn:aws:dataprotection::aws:data-identifier/CreditCardNumber",
+                          "arn:aws:dataprotection::aws:data-identifier/AwsSecretKey"
+                        ],
+                        "operations": {
+                          "audit": {
+                            "enabled": true,
+                            "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                          },
+                          "redaction": {
+                            "enabled": true,
+                            "maskConfig": {
+                              "MaskConfig": {}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "tags": {
+                  "Project": "${meta.variables.project}",
+                  "Environment": "${meta.environment}",
+                  "SecurityLevel": "High",
+                  "Component": "LoadBalancer"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "🔖[PLATFORM]": {
+      "🧩[ECS]": {
+        "🟣[main]": {
+          "l4_ecsClusterFactory": [
+            {
+              "enabled": "${meta.featureFlags.FLAG_ecs-cluster}",
+              "id": "ecs-cluster",
+              "inputs": {},
+              "outputs": {
+                "id": true,
+                "name": true,
+                "arn": true
+              },
+              "dependsOn": [],
+              "configuration": {
+                "name": "${meta.variables.project}-ecs-cluster",
+                "launchType": "FARGATE",
+                "deployStrategy": "rolling",
+                "cloudwatchLogsDataProtection": {
+                  "enabled": false,
+                  "enableAudit": true,
+                  "enableRedaction": true,
+                  "dataIdentifiers": [
+                    "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                    "arn:aws:dataprotection::aws:data-identifier/AwsSecretKey",
+                    "arn:aws:dataprotection::aws:data-identifier/CreditCardNumber",
+                    "arn:aws:dataprotection::aws:data-identifier/PhoneNumber-US",
+                    "arn:aws:dataprotection::aws:data-identifier/IpAddress"
+                  ],
+                  "operations": {
+                    "audit": {
+                      "enabled": true,
+                      "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                    },
+                    "redaction": {
+                      "enabled": true,
+                      "maskConfig": {
+                        "MaskConfig": {}
+                      }
+                    }
+                  }
+                },
+                "tags": {
+                  "Project": "${meta.variables.project}",
+                  "Environment": "${meta.environment}",
+                  "Owner": "${meta.variables.owner}"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "🔖[SERVICES]": {
+      "📁[BE]": {
+        "📁[ECS]": {
+          "🧩[BE]": {
+            "🟣[networking]": {
+              "l3_securityGroupsFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_be-ecs-sg}",
+                  "id": "be-ecs-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "BE ECS SERVICE SG"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_be-codepipelines-sg}",
+                  "id": "be-codepipelines-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "BE CODEPIPELINES SG"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_lambda-sg}",
+                  "id": "lambda-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "LAMBDA FUNCTIONS SG"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_lambda-codepipeline-sg}",
+                  "id": "lambda-codepipeline-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "LAMBDA CODEPIPELINES SG"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_be-eks-codepipelines-sg}",
+                  "id": "be-eks-codepipelines-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "BE EKS CODEPIPELINES SG"
+                  }
+                }
+              ],
+              "l3_securityGroupRulesFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-alb-to-ecs-be}",
+                  "id": "from-alb-to-ecs-be",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:be-ecs-sg.id}",
+                    "sourceSecurityGroupId": "${output:alb-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:be-ecs-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 8080,
+                    "toPort": 8080,
+                    "protocol": "tcp",
+                    "sourceSecurityGroupId": "${output:alb-sg.id}"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-all-to-ecs-be}",
+                  "id": "from-egress-all-to-ecs-be",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:be-ecs-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:be-ecs-sg.id}",
+                    "type": "egress",
+                    "fromPort": 0,
+                    "toPort": 0,
+                    "protocol": "-1",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ]
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-ecs-be-to-aurora-serverless}",
+                  "id": "from-ecs-be-to-aurora-serverless",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "sourceSecurityGroupId": "${output:be-ecs-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 5432,
+                    "toPort": 5432,
+                    "protocol": "tcp",
+                    "sourceSecurityGroupId": "${output:be-ecs-sg.id}"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-ingress-vpc-to-pipeline-be}",
+                  "id": "form-ingress-vpc-to-pipeline-be",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:be-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:be-codepipelines-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS from VPC for AWS service access"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-secure-to-pipeline-be}",
+                  "id": "from-egress-secure-to-pipeline-be",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:be-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:be-codepipelines-sg.id}",
+                    "type": "egress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "HTTPS to internet for GitHub and AWS services"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-vpc-endpoints-to-pipeline-be}",
+                  "id": "from-egress-vpc-endpoints-to-pipeline-be",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:be-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:be-codepipelines-sg.id}",
+                    "type": "egress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS to VPC endpoints for AWS services"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_lambda-sg}",
+                  "id": "from-lambda-to-aurora-serverless",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "sourceSecurityGroupId": "${output:lambda-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 5432,
+                    "toPort": 5432,
+                    "protocol": "tcp",
+                    "sourceSecurityGroupId": "${output:lambda-sg.id}",
+                    "description": "Lambda to Aurora PostgreSQL"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_lambda-sg}",
+                  "id": "from-lambda-to-redis",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:redis-sg.id}",
+                    "sourceSecurityGroupId": "${output:lambda-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:redis-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 6379,
+                    "toPort": 6379,
+                    "protocol": "tcp",
+                    "sourceSecurityGroupId": "${output:lambda-sg.id}",
+                    "description": "Lambda to Redis"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_lambda-sg}",
+                  "id": "lambda-egress-all",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:lambda-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:lambda-sg.id}",
+                    "type": "egress",
+                    "fromPort": 0,
+                    "toPort": 65535,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "Lambda egress to all destinations"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-lambda-codepipeline-to-aurora-serverless}",
+                  "id": "from-lambda-codepipeline-to-aurora-serverless",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "sourceSecurityGroupId": "${output:lambda-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 5432,
+                    "toPort": 5432,
+                    "protocol": "tcp",
+                    "sourceSecurityGroupId": "${output:lambda-codepipeline-sg.id}",
+                    "description": "Lambda CodePipeline to Aurora PostgreSQL for migrations"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-ingress-vpc-to-lambda-pipeline}",
+                  "id": "from-ingress-vpc-to-lambda-pipeline",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:lambda-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:lambda-codepipeline-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS from VPC for Lambda pipeline AWS service access"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-secure-to-lambda-pipeline}",
+                  "id": "from-egress-secure-to-lambda-pipeline",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:lambda-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:lambda-codepipeline-sg.id}",
+                    "type": "egress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "HTTPS egress from Lambda pipeline to internet"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-vpc-endpoints-to-lambda-pipeline}",
+                  "id": "from-egress-vpc-endpoints-to-lambda-pipeline",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:lambda-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:lambda-codepipeline-sg.id}",
+                    "type": "egress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS egress to VPC endpoints for Lambda pipeline AWS services"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-lambda-codepipeline-to-aurora-serverless}",
+                  "id": "lambda-codepipeline-egress-postgres",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:lambda-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:lambda-codepipeline-sg.id}",
+                    "type": "egress",
+                    "fromPort": 5432,
+                    "toPort": 5432,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "PostgreSQL egress from Lambda CodePipeline for database migrations"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-eks-codepipeline-to-aurora-serverless}",
+                  "id": "from-eks-codepipeline-to-aurora-serverless",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "sourceSecurityGroupId": "${output:be-eks-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 5432,
+                    "toPort": 5432,
+                    "protocol": "tcp",
+                    "sourceSecurityGroupId": "${output:be-eks-codepipelines-sg.id}",
+                    "description": "EKS CodePipeline to Aurora PostgreSQL for migrations"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-eks-codepipeline-to-aurora-serverless}",
+                  "id": "eks-codepipeline-egress-postgres",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:be-eks-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:be-eks-codepipelines-sg.id}",
+                    "type": "egress",
+                    "fromPort": 5432,
+                    "toPort": 5432,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "PostgreSQL egress from EKS CodePipeline for database migrations"
+                  }
+                }
+              ]
+            },
+            "🟣[main]": {
+              "l4_ecsServiceFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_ecs-service-be}",
+                  "id": "ecs-service-be",
+                  "inputs": {
+                    "albListenerArn": "${output:alb.listenerArn}",
+                    "albSgId": "${output:alb-sg.id}",
+                    "sgId": "${output:be-ecs-sg.id}",
+                    "subnets": "${output:main-networking.privateSubnetIds}",
+                    "clusterArn": "${output:ecs-cluster.arn}",
+                    "vpcId": "${output:main-networking.vpcId}",
+                    "endpoint": "endpoint",
+                    "username": "username"
+                  },
+                  "outputs": {
+                    "id": true,
+                    "name": true,
+                    "secretArn": true,
+                    "ecrRepositoryUrl": true,
+                    "ecrRepositoryArn": true
+                  },
+                  "dependsOn": [
+                    "be-ecs-sg",
+                    "alb",
+                    "ecs-cluster"
+                  ],
+                  "configuration": {
+                    "name": "be",
+                    "path": "/api/*",
+                    "healthCheckPath": "/api/health/",
+                    "healthCheckIntervalSeconds": 30,
+                    "healthCheckTimeoutSeconds": 5,
+                    "healthyThresholdCount": 2,
+                    "unhealthyThresholdCount": 5,
+                    "healthCheckGracePeriodSeconds": 300,
+                    "forceRedeploy": "forceRedeploy3",
+                    "dockerBuild": {
+                      "context": "${meta.variables.DOCKER_CONTEXT}/django-backend",
+                      "dockerfile": "${meta.variables.DOCKERFILE}/django-backend/Dockerfile",
+                      "repositoryName": "${meta.variables.project}-be-ecr-repo",
+                      "forceRebuild": false
+                    },
+                    "logging": {
+                      "retentionInDays": 365,
+                      "enabled": true,
+                      "logDriver": "awslogs",
+                      "dataProtection": {
+                        "enabled": false,
+                        "operations": {
+                          "audit": {
+                            "enabled": true,
+                            "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                          },
+                          "redaction": {
+                            "enabled": true,
+                            "maskConfig": {}
+                          }
+                        }
+                      }
+                    },
+                    "port": 8000,
+                    "desiredCount": 1,
+                    "minCapacity": 1,
+                    "maxCapacity": 2,
+                    "cpu": 2048,
+                    "memory": 4096,
+                    "autoScaling": {
+                      "enabled": true,
+                      "targetCPUUtilization": 70,
+                      "targetMemoryUtilization": 80,
+                      "scaleInCooldown": 300,
+                      "scaleOutCooldown": 300
+                    },
+                    "circuitBreaker": {
+                      "enabled": true,
+                      "enable": true,
+                      "rollback": true
+                    },
+                    "public": true,
+                    "taskRolePolicyStatements": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "ecr:*"
+                        ],
+                        "Resource": "*"
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "s3:GetObject",
+                          "s3:PutObject",
+                          "s3:DeleteObject",
+                          "s3:ListBucket"
+                        ],
+                        "Resource": [
+                          "${output:assets-bucket.arn}",
+                          "${output:assets-bucket.arn}/*"
+                        ]
+                      }
+                    ],
+                    "executionRolePolicyStatements": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "ecr:*"
+                        ],
+                        "Resource": "*"
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogGroup",
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          "arn:aws:logs:*:*:*"
+                        ]
+                      }
+                    ],
+                    "ecr": {
+                      "enabled": true,
+                      "name": "be-ecr-repo",
+                      "imageScanningConfiguration": {
+                        "scanOnPush": true
+                      },
+                      "encryptionConfiguration": {
+                        "encryptionType": "AES256"
+                      },
+                      "imageTagMutability": "MUTABLE",
+                      "lifecyclePolicy": {
+                        "rules": [
+                          {
+                            "rulePriority": 1,
+                            "description": "Expire untagged images after 7 days",
+                            "selection": {
+                              "tagStatus": "untagged",
+                              "countType": "sinceImagePushed",
+                              "countUnit": "days",
+                              "countNumber": 7
+                            },
+                            "action": {
+                              "type": "expire"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "env": [
+                      {
+                        "name": "SERVER_PORT",
+                        "value": "8080",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "LOGGING_LEVEL_ROOT",
+                        "value": "info",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "APP_NAME",
+                        "value": "${meta.variables.project}",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "APP_BACKEND_URL",
+                        "value": "https://api.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/be",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "APP_FRONTEND_URL",
+                        "value": "https://app.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "DB_HOST",
+                        "value": "${output:aurora-postgres-cluster.endpoint}"
+                      },
+                      {
+                        "name": "DB_PORT",
+                        "value": "5432"
+                      },
+                      {
+                        "name": "DB_NAME",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}"
+                      },
+                      {
+                        "name": "DB_USER",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_USER}"
+                      },
+                      {
+                        "name": "DB_PASSWORD",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
+                      },
+                      {
+                        "name": "DJANGO_SECRET_KEY",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SECRET_KEY}"
+                      },
+                      {
+                        "name": "DJANGO_SETTINGS_MODULE",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SETTINGS_MODULE}"
+                      },
+                      {
+                        "name": "DJANGO_ALLOWED_HOSTS",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_ALLOWED_HOSTS}"
+                      },
+                      {
+                        "name": "DJANGO_DEBUG",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_DEBUG}"
+                      },
+                      {
+                        "name": "AWS_REGION",
+                        "value": "${meta.variables.region}"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "🟣[cicd]": {
+              "l4_enhancedEcsCodePipelineFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_pipeline-ecs-service-be}",
+                  "id": "pipeline-ecs-service-be",
+                  "type": "ecs",
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}",
+                    "subnetIds": "${output:main-networking.privateSubnetIds}",
+                    "securityGroupIds": [
+                      "${output:be-codepipelines-sg.id}"
+                    ]
+                  },
+                  "outputs": {
+                    "pipelineArn": true,
+                    "pipelineName": true,
+                    "pipelineUrl": true,
+                    "notificationEventRuleName": true,
+                    "arn": true,
+                    "name": true,
+                    "url": true,
+                    "codebuildProjectName": true,
+                    "notificationEventRuleArn": true,
+                    "notificationRuleArn": true
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "pipeline": {
+                      "repoOwner": "${meta.variables.backendRepoOwner}",
+                      "repoName": "${meta.variables.backendRepoName}",
+                      "branch": "${meta.variables.backendBranch}",
+                      "codestarConnectionArn": "${output:github-codestar-connection.arn}",
+                      "buildspecPath": "./assets/cicd/buildspecs/buildspec-django-be.yml",
+                      "buildImage": "aws/codebuild/standard:7.0",
+                      "buildTimeout": 20,
+                      "privilegedMode": true,
+                      "computeType": "BUILD_GENERAL1_LARGE",
+                      "environmentType": "LINUX_CONTAINER",
+                      "buildEnvironmentVariables": [
+                        {
+                          "name": "AWS_ACCOUNT_ID",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:ACCOUNT_ID}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "AWS_DEFAULT_REGION",
+                          "value": "${meta.variables.region}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "ECR_REPO_NAME",
+                          "value": "${meta.variables.project}-be-ecr-repo",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "CONTAINER_NAME",
+                          "value": "be",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DB_HOST",
+                          "value": "${output:aurora-postgres-cluster.endpoint}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DB_PORT",
+                          "value": "5432",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DB_NAME",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DJANGO_SETTINGS_MODULE",
+                          "value": "config.settings.production",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DJANGO_SECRET_KEY",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SECRET_KEY}",
+                          "type": "SECRETS_MANAGER"
+                        }
+                      ],
+                      "badgeEnabled": false,
+                      "s3BucketForceDestroy": true,
+                      "githubWebhookEvents": [
+                        "push"
+                      ],
+                      "pollSourceChanges": false,
+                      "webhookEnabled": false,
+                      "ecsClusterName": "${output:ecs-cluster.name}",
+                      "ecsServiceName": "${output:ecs-service-be.name}",
+                      "deployCodePipelineInVpc": true,
+                      "tags": {
+                        "Project": "${meta.variables.project}",
+                        "Environment": "${meta.environment}",
+                        "Owner": "${meta.variables.owner}",
+                        "NotificationEnabled": "true"
+                      },
+                      "ecrRepositoryName": "${meta.variables.project}-be-ecr-repo"
+                    },
+                    "cloudwatchLogsDataProtection": {
+                      "enabled": false,
+                      "enableAudit": true,
+                      "enableRedaction": true,
+                      "dataIdentifiers": [
+                        "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                        "arn:aws:dataprotection::aws:data-identifier/AwsSecretKey",
+                        "arn:aws:dataprotection::aws:data-identifier/IpAddress"
+                      ],
+                      "operations": {
+                        "audit": {
+                          "enabled": true,
+                          "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                        },
+                        "redaction": {
+                          "enabled": true,
+                          "maskConfig": {
+                            "MaskConfig": {}
+                          }
+                        }
+                      }
+                    },
+                    "notifications": {
+                      "enabled": false,
+                      "useNotificationRules": true,
+                      "snsTopicArn": "${output:pipeline-notifications.topicArn}",
+                      "notificationEventTypes": [
+                        "codepipeline-pipeline-pipeline-execution-started",
+                        "codepipeline-pipeline-pipeline-execution-succeeded",
+                        "codepipeline-pipeline-pipeline-execution-failed",
+                        "codepipeline-pipeline-stage-execution-failed",
+                        "codepipeline-pipeline-manual-approval-needed"
+                      ],
+                      "notificationDetailType": "FULL",
+                      "eventTypes": [
+                        "PIPELINE_EXECUTION_STARTED",
+                        "PIPELINE_EXECUTION_SUCCEEDED",
+                        "PIPELINE_EXECUTION_FAILED",
+                        "STAGE_EXECUTION_FAILED"
+                      ],
+                      "detailType": "Full",
+                      "successNotifications": true,
+                      "failureNotifications": true,
+                      "startNotifications": true
+                    },
+                    "environment": [
+                      {
+                        "name": "DB_HOST",
+                        "value": "${output:aurora-postgres-cluster.endpoint}"
+                      },
+                      {
+                        "name": "DB_PORT",
+                        "value": "5432"
+                      },
+                      {
+                        "name": "DB_NAME",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}"
+                      },
+                      {
+                        "name": "DB_USER",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_USER}"
+                      },
+                      {
+                        "name": "DB_PASSWORD",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "Project": "${meta.variables.project}",
+                    "Environment": "${meta.environment}",
+                    "Owner": "${meta.variables.owner}",
+                    "Service": "Backend",
+                    "PipelineType": "ECS"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "📁[FE]": {
+        "📁[STATIC]": {
+          "🧩[CLOUDFRONT]": {
+            "🟣[networking]": {
+              "l3_securityGroupsFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_cloudfront-codepipeline-sg}",
+                  "id": "cloudfront-codepipeline-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "CLOUDFRONT CODEPIPELINE SG - Secure VPC deployment"
+                  }
+                }
+              ],
+              "l3_securityGroupRulesFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-ingress-vpc-to-cloudfront-pipeline}",
+                  "id": "from-ingress-vpc-to-cloudfront-pipeline",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS from VPC for AWS service access"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-internet-to-cloudfront-pipeline}",
+                  "id": "from-egress-internet-to-cloudfront-pipeline",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}",
+                    "type": "egress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "HTTPS to internet for GitHub and npm packages"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-http-to-cloudfront-pipeline}",
+                  "id": "from-egress-http-to-cloudfront-pipeline",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}",
+                    "type": "egress",
+                    "fromPort": 80,
+                    "toPort": 80,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "HTTP to internet for package downloads"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-dns-to-cloudfront-pipeline}",
+                  "id": "from-egress-dns-to-cloudfront-pipeline",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}",
+                    "type": "egress",
+                    "fromPort": 53,
+                    "toPort": 53,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "DNS TCP for name resolution"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-dns-udp-to-cloudfront-pipeline}",
+                  "id": "from-egress-dns-udp-to-cloudfront-pipeline",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}",
+                    "type": "egress",
+                    "fromPort": 53,
+                    "toPort": 53,
+                    "protocol": "udp",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "DNS UDP for name resolution"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-vpc-endpoints-to-cloudfront-pipeline}",
+                  "id": "from-egress-vpc-endpoints-to-cloudfront-pipeline",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:cloudfront-codepipeline-sg.id}",
+                    "type": "egress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS to VPC endpoints for AWS services"
+                  }
+                }
+              ]
+            },
+            "🟣[main]": {
+              "l4_s3StaticHostingFactory": [
+                {
+                  "notes": "",
+                  "enabled": "${meta.featureFlags.FLAG_cloudfront}",
+                  "id": "cloudfront",
+                  "inputs": {
+                    "providers": "dev-us-east-1",
+                    "route53Provider": "root",
+                    "hostedZoneId": "${secret:${meta.variables.project}/global-secrets-base:HOSTED_ZONE_ID}"
+                  },
+                  "outputs": {
+                    "distributionId": true
+                  },
+                  "provider": "dev",
+                  "dependsOn": [
+                    "cloudfront-pipeline-role",
+                    "cloudfront-service-role"
+                  ],
+                  "configuration": {
+                    "bucket": "${meta.variables.project}-${meta.environment}-cloudfront-bucket",
+                    "acl": "private",
+                    "tags": {
+                      "Project": "${meta.variables.project}",
+                      "Environment": "${meta.environment}",
+                      "Owner": "${meta.variables.owner}"
+                    },
+                    "website": {
+                      "indexDocument": "index.html",
+                      "errorDocument": "error.html"
+                    },
+                    "versioning": true,
+                    "encryption": {
+                      "enabled": false,
+                      "type": "SSE-S3"
+                    },
+                    "blockPublicAccess": true,
+                    "cors": {
+                      "allowedHeaders": [
+                        "*"
+                      ],
+                      "allowedMethods": [
+                        "GET"
+                      ],
+                      "allowedOrigins": [
+                        "*"
+                      ],
+                      "exposeHeaders": [
+                        "ETag"
+                      ],
+                      "maxAgeSeconds": 3000
+                    },
+                    "lifecycleRules": [
+                      {
+                        "enabled": true,
+                        "id": "expire-old-versions",
+                        "noncurrentVersionExpiration": {
+                          "days": 30
+                        }
+                      }
+                    ],
+                    "eventNotifications": [],
+                    "cloudfront": {
+                      "enabled": true,
+                      "aliases": [
+                        "app.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}"
+                      ],
+                      "enableCertProvisioning": true,
+                      "hostedZoneId": "${secret:${meta.variables.project}/global-secrets-base:HOSTED_ZONE_ID}",
+                      "priceClass": "PriceClass_100",
+                      "enableWaf": true,
+                      "wafConfig": {
+                        "enabled": false,
+                        "rateLimitRpm": 1000,
+                        "geoBlockedCountries": [
+                          "CN",
+                          "RU",
+                          "KP"
+                        ],
+                        "enableManagedRules": true,
+                        "logging": {
+                          "enabled": false,
+                          "logGroupName": "/aws/wafv2/cloudfront/${meta.variables.project}-${meta.environment}-cloudfront-waf-logs",
+                          "logRetentionInDays": 365,
+                          "redactedFields": [
+                            "uri",
+                            "query-string"
+                          ],
+                          "logDestinationType": "cloudwatch",
+                          "dataProtection": {
+                            "enabled": false,
+                            "enableAudit": true,
+                            "enableRedaction": true,
+                            "dataIdentifiers": [
+                              "arn:aws:dataprotection::aws:data-identifier/IpAddress",
+                              "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                              "arn:aws:dataprotection::aws:data-identifier/CreditCardNumber"
+                            ],
+                            "operations": {
+                              "audit": {
+                                "enabled": true,
+                                "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                              },
+                              "redaction": {
+                                "enabled": true,
+                                "maskConfig": {
+                                  "MaskConfig": {}
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "customRules": [
+                          {
+                            "name": "BlockSuspiciousUserAgents",
+                            "priority": 200,
+                            "regex": "(bot|crawler|spider|scan|wget|curl)",
+                            "action": "count"
+                          }
+                        ]
+                      },
+                      "geoRestriction": {
+                        "restrictionType": "none"
+                      },
+                      "customErrorResponses": [
+                        {
+                          "errorCode": 404,
+                          "responseCode": 200,
+                          "responsePagePath": "/index.html"
+                        },
+                        {
+                          "errorCode": 403,
+                          "responseCode": 200,
+                          "responsePagePath": "/index.html"
+                        }
+                      ],
+                      "cacheBehaviors": [],
+                      "logging": {
+                        "enabled": false,
+                        "bucket": "${meta.variables.project}-${meta.environment}-cloudfront-access-logs-useast1.s3.amazonaws.com",
+                        "prefix": "cloudfront-access-logs/",
+                        "includeCookies": false
+                      },
+                      "defaultRootObject": "index.html",
+                      "tags": {
+                        "Project": "${meta.variables.project}",
+                        "Environment": "${meta.environment}"
+                      }
+                    },
+                    "monitoring": {
+                      "enabled": false,
+                      "alarms": [],
+                      "dashboard": true
+                    }
+                  }
+                }
+              ]
+            },
+            "🟣[cicd]": {
+              "l4_enhancedCloudFrontCodePipelineFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_cloudfront-cicd}",
+                  "id": "cloudfront-cicd",
+                  "type": "cloudfront",
+                  "outputs": {
+                    "pipelineArn": true,
+                    "pipelineName": true,
+                    "pipelineUrl": true,
+                    "codebuildProjectName": true,
+                    "notificationEventRuleArn": true,
+                    "notificationEventRuleName": true,
+                    "notificationRuleArn": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}",
+                    "subnetIds": "${output:main-networking.privateSubnetIds}",
+                    "securityGroupIds": [
+                      "${output:cloudfront-codepipeline-sg.id}"
+                    ]
+                  },
+                  "dependsOn": [
+                    "github-codestar-connection",
+                    "cloudfront"
+                  ],
+                  "configuration": {
+                    "pipeline": {
+                      "repoOwner": "${meta.variables.frontendRepoOwner}",
+                      "repoName": "${meta.variables.frontendRepoName}",
+                      "branch": "${meta.variables.frontendBranch}",
+                      "codestarConnectionArn": "${output:github-codestar-connection.arn}",
+                      "buildspecPath": "./assets/cicd/buildspecs/buildspec-frontend.yml",
+                      "buildImage": "aws/codebuild/amazonlinux2-x86_64-standard:5.0",
+                      "buildTimeout": 21,
+                      "buildEnvironmentVariables": [
+                        {
+                          "name": "VITE_API_URL",
+                          "value": "https://api.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/be/api/v1/",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "VITE_API_NO_API_VER",
+                          "value": "https://api.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/be/",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "GENERATE_SOURCEMAP",
+                          "value": "false",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "AWS_DEFAULT_REGION",
+                          "value": "${meta.variables.region}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "AWS_REGION",
+                          "value": "${meta.variables.region}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "NODE_ENV",
+                          "value": "${meta.environment}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "SONAR_ENABLED",
+                          "value": "true",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "SONAR_PROJECT_KEY",
+                          "value": "${meta.variables.project}_${meta.variables.project}-frontend",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "SONAR_PROJECT_KEY_SECRET",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:SONAR_PROJECT_KEY}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "SONAR_ORGANIZATION",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:SONAR_ORGANIZATION}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "SONAR_TOKEN",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:SONAR_TOKEN}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "VITE_ENV",
+                          "value": "${meta.environment}",
+                          "type": "PLAINTEXT"
+                        }
+                      ],
+                      "cloudfrontDistributionId": "${output:cloudfront.distributionId}",
+                      "s3BucketName": "${meta.variables.project}-${meta.environment}-cloudfront-bucket",
+                      "s3BucketForceDestroy": true,
+                      "outputArtifactFormat": "CODE_ZIP",
+                      "pollSourceChanges": true,
+                      "deployCodePipelineInVpc": true,
+                      "cacheInvalidationPaths": [
+                        "/*"
+                      ],
+                      "tags": {
+                        "Project": "${meta.variables.project}",
+                        "Environment": "${meta.environment}",
+                        "Owner": "${meta.variables.owner}",
+                        "NotificationEnabled": "true"
+                      }
+                    },
+                    "cloudwatchLogsDataProtection": {
+                      "enabled": false,
+                      "enableAudit": true,
+                      "enableRedaction": true,
+                      "dataIdentifiers": [
+                        "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                        "arn:aws:dataprotection::aws:data-identifier/AwsSecretKey",
+                        "arn:aws:dataprotection::aws:data-identifier/IpAddress"
+                      ],
+                      "operations": {
+                        "audit": {
+                          "enabled": true,
+                          "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                        },
+                        "redaction": {
+                          "enabled": true,
+                          "maskConfig": {
+                            "MaskConfig": {}
+                          }
+                        }
+                      }
+                    },
+                    "notifications": {
+                      "enabled": false,
+                      "useNotificationRules": true,
+                      "snsTopicArn": "${output:pipeline-notifications.topicArn}",
+                      "notificationEventTypes": [
+                        "codepipeline-pipeline-pipeline-execution-started",
+                        "codepipeline-pipeline-pipeline-execution-succeeded",
+                        "codepipeline-pipeline-pipeline-execution-failed",
+                        "codepipeline-pipeline-stage-execution-failed",
+                        "codepipeline-pipeline-manual-approval-needed"
+                      ],
+                      "notificationDetailType": "FULL",
+                      "eventTypes": [
+                        "PIPELINE_EXECUTION_STARTED",
+                        "PIPELINE_EXECUTION_SUCCEEDED",
+                        "PIPELINE_EXECUTION_FAILED",
+                        "STAGE_EXECUTION_FAILED"
+                      ],
+                      "detailType": "Full",
+                      "successNotifications": true,
+                      "failureNotifications": true,
+                      "startNotifications": true
+                    }
+                  },
+                  "tags": {
+                    "Project": "${meta.variables.project}",
+                    "Environment": "${meta.environment}",
+                    "Owner": "${meta.variables.owner}",
+                    "Service": "Frontend",
+                    "PipelineType": "CloudFront"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
   }
 }
