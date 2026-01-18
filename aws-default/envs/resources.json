@@ -835,6 +835,14 @@
                     ],
                     "ingress": [
                       {
+                        "ruleNumber": 1,
+                        "protocol": "all",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 0,
+                        "toPort": 65535
+                      },
+                      {
                         "ruleNumber": 100,
                         "protocol": "tcp",
                         "action": "allow",
@@ -868,6 +876,14 @@
                       }
                     ],
                     "egress": [
+                      {
+                        "ruleNumber": 1,
+                        "protocol": "all",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 0,
+                        "toPort": 65535
+                      },
                       {
                         "ruleNumber": 100,
                         "protocol": "tcp",
@@ -906,6 +922,14 @@
                     ],
                     "ingress": [
                       {
+                        "ruleNumber": 1,
+                        "protocol": "tcp",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 443,
+                        "toPort": 443
+                      },
+                      {
                         "ruleNumber": 100,
                         "protocol": "tcp",
                         "action": "allow",
@@ -931,6 +955,14 @@
                       }
                     ],
                     "egress": [
+                      {
+                        "ruleNumber": 1,
+                        "protocol": "all",
+                        "action": "allow",
+                        "cidrBlock": "0.0.0.0/0",
+                        "fromPort": 0,
+                        "toPort": 65535
+                      },
                       {
                         "ruleNumber": 100,
                         "protocol": "tcp",
@@ -1686,20 +1718,6 @@
                   "configuration": {
                     "description": "LAMBDA CODEPIPELINES SG"
                   }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_be-eks-codepipelines-sg}",
-                  "id": "be-eks-codepipelines-sg",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "vpcId": "${output:main-networking.vpcId}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "description": "BE EKS CODEPIPELINES SG"
-                  }
                 }
               ],
               "l3_securityGroupRulesFactory": [
@@ -2002,49 +2020,6 @@
                     ],
                     "description": "PostgreSQL egress from Lambda CodePipeline for database migrations"
                   }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_from-eks-codepipeline-to-aurora-serverless}",
-                  "id": "from-eks-codepipeline-to-aurora-serverless",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:aurora-postgres-sg.id}",
-                    "sourceSecurityGroupId": "${output:be-eks-codepipelines-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:aurora-postgres-sg.id}",
-                    "type": "ingress",
-                    "fromPort": 5432,
-                    "toPort": 5432,
-                    "protocol": "tcp",
-                    "sourceSecurityGroupId": "${output:be-eks-codepipelines-sg.id}",
-                    "description": "EKS CodePipeline to Aurora PostgreSQL for migrations"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_from-eks-codepipeline-to-aurora-serverless}",
-                  "id": "eks-codepipeline-egress-postgres",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:be-eks-codepipelines-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:be-eks-codepipelines-sg.id}",
-                    "type": "egress",
-                    "fromPort": 5432,
-                    "toPort": 5432,
-                    "protocol": "tcp",
-                    "cidrBlocks": [
-                      "${meta.variables.cidrMain}"
-                    ],
-                    "description": "PostgreSQL egress from EKS CodePipeline for database migrations"
-                  }
                 }
               ]
             },
@@ -2077,19 +2052,19 @@
                   ],
                   "configuration": {
                     "name": "be",
-                    "path": "/api/*",
-                    "healthCheckPath": "/api/health/",
+                    "path": "/*",
+                    "healthCheckPath": "/",
                     "healthCheckIntervalSeconds": 30,
                     "healthCheckTimeoutSeconds": 5,
                     "healthyThresholdCount": 2,
                     "unhealthyThresholdCount": 5,
                     "healthCheckGracePeriodSeconds": 300,
-                    "forceRedeploy": "forceRedeploy3",
+                    "forceRedeploy": "${meta.variables.MICROSERVICE_REBUILD_BE}",
                     "dockerBuild": {
-                      "context": "${meta.variables.DOCKER_CONTEXT}/django-backend",
-                      "dockerfile": "${meta.variables.DOCKERFILE}/django-backend/Dockerfile",
+                      "context": "${meta.variables.DOCKER_CONTEXT}/${meta.variables.DOCKER_PROJECT_TEMPLATE}",
+                      "dockerfile": "${meta.variables.DOCKERFILE}/${meta.variables.DOCKER_PROJECT_TEMPLATE}/Dockerfile",
                       "repositoryName": "${meta.variables.project}-be-ecr-repo",
-                      "forceRebuild": false
+                      "forceRebuild": true
                     },
                     "logging": {
                       "retentionInDays": 365,
@@ -2109,7 +2084,7 @@
                         }
                       }
                     },
-                    "port": 8000,
+                    "port": 8080,
                     "desiredCount": 1,
                     "minCapacity": 1,
                     "maxCapacity": 2,
@@ -2230,7 +2205,7 @@
                       },
                       {
                         "name": "DB_PORT",
-                        "value": "5432"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
                       },
                       {
                         "name": "DB_NAME",
@@ -2335,7 +2310,7 @@
                         },
                         {
                           "name": "DB_PORT",
-                          "value": "5432",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}",
                           "type": "PLAINTEXT"
                         },
                         {
@@ -2345,7 +2320,7 @@
                         },
                         {
                           "name": "DJANGO_SETTINGS_MODULE",
-                          "value": "config.settings.production",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SETTINGS_MODULE}",
                           "type": "PLAINTEXT"
                         },
                         {
@@ -2424,7 +2399,7 @@
                       },
                       {
                         "name": "DB_PORT",
-                        "value": "5432"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
                       },
                       {
                         "name": "DB_NAME",

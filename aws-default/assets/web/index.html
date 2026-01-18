@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend - Coming Soon</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature {
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #ffd700;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(40, 167, 69, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            margin: 1rem 0;
+            border: 1px solid rgba(40, 167, 69, 0.5);
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: #28a745;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+            }
+        }
+
+        .info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: left;
+        }
+
+        .info h3 {
+            margin-bottom: 1rem;
+            color: #ffd700;
+        }
+
+        .info ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info li {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .info li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .api-info {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            text-align: left;
+        }
+
+        .env-badge {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 0.2rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 0.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        
+        <h1>Frontend </h1>
+        <p class="subtitle">Secure  Service</p>
+        
+        <div class="status">
+            <div class="pulse"></div>
+            <span>Infrastructure Deployment in Progress</span>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h3>Secure</h3>
+                <p>Enterprise-grade security</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <h3>Fast</h3>
+                <p>Lightning-fast </p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <h3>Scalable</h3>
+                <p>Built for enterprise scale</p>
+            </div>
+        </div>
+
+        <div class="info">
+            <h3><i class="fas fa-rocket"></i> What's Being Deployed</h3>
+            <ul>
+                <li>ECS Fargate containers with Auto Scaling</li>
+                <li>Application Load Balancer with SSL termination</li>
+                <li>Private and Public API endpoints</li>
+                <li>CloudWatch logging and monitoring</li>
+                <li>Security Groups and networking</li>
+                <li>CI/CD pipelines for continuous deployment</li>
+            </ul>
+        </div>
+
+        <div class="api-info">
+            <strong>API Endpoints (Post-Deployment):</strong><br>
+            <span class="env-badge">BE URL</span> https://api.YOUR-ENV.YOUR-DNS.com/<br>
+            <span class="env-badge">FE URL</span> https://application.YOUR-ENV.YOUR-DNS.com/<br>
+            <span class="env-badge">HEALTH</span> /up
+        </div>
+
+        <div class="footer">
+            <p>
+                <i class="fas fa-cloud"></i> 
+                Powered by AWS ECS Fargate • CloudFront • S3<br>
+                Environment: Development • Region: us-east-1
+            </p>
+            <p style="margin-top: 0.5rem;">
+                <i class="fas fa-clock"></i> 
+                Page generated: <span id="timestamp"></span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Update timestamp
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        
+        // Simple health check simulation
+        function simulateProgress() {
+            const messages = [
+                'Initializing infrastructure...',
+                'Creating ECS cluster...',
+                'Configuring load balancers...',
+                'Setting up security groups...',
+                'Deploying containers...',
+                'Infrastructure deployment in progress'
+            ];
+            
+            let index = 0;
+            const statusElement = document.querySelector('.status span');
+            
+            setInterval(() => {
+                statusElement.textContent = messages[index];
+                index = (index + 1) % messages.length;
+            }, 3000);
+        }
+        
+        // Start progress simulation
+        simulateProgress();
+        
+        // Add some interactivity
+        document.querySelectorAll('.feature').forEach(feature => {
+            feature.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+    </script>
+</body>
+</html>
