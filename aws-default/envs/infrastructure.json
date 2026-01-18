@@ -8,7 +8,10 @@
     "variables_infra": {
       "CODEBUILD_IMAGE": "aws/codebuild/standard:7.0",
       "CODEBUILD_IMAGE_OLD": "aws/codebuild/amazonlinux2-x86_64-standard:5.0",
-      "CODEBUILD_INSTANCE_TYPE": "BUILD_GENERAL1_LARGE"
+      "CODEBUILD_INSTANCE_TYPE": "BUILD_GENERAL1_LARGE",
+      "DOCKER_PROJECT_TEMPLATE": "django",
+      "DOCKER_CONTEXT": "./assets/docker",
+      "DOCKERFILE": "./assets/docker"
     },
     "variables": {
       "secret": {
@@ -20,9 +23,6 @@
       "owner": "terruvim",
       "project": "demo",
       "region": "us-east-1",
-      "DOCKER_PROJECT_TEMPLATE": "django",
-      "DOCKER_CONTEXT": "/USERS/YOU/YOUR_FOLDER/YOUR_PROJECT/YOUR_DEPLOYMENT/assets/docker",
-      "DOCKERFILE": "/USERS/YOU/YOUR_FOLDER/YOUR_PROJECT/YOUR_DEPLOYMENT/assets/docker",
       "cidrMain": "10.0.0.0/16",
       "cidrSubnetPublicA": "10.0.1.0/24",
       "cidrSubnetPublicB": "10.0.2.0/24",
@@ -35,7 +35,9 @@
       "frontendBranch": "{{{main}}}",
       "backendRepoOwner": "{{{YourOrganization}}}",
       "backendRepoName": "{{{your-backend-repo}}}",
-      "backendBranch": "{{{main}}}",
+      "backendBranch": "{{{main}}}"
+    },
+    "microservices": {
       "MICROSERVICE_REBUILD_BE": "forceRedeploy1"
     },
     "providers": {},

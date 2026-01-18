@@ -2059,10 +2059,10 @@
                     "healthyThresholdCount": 2,
                     "unhealthyThresholdCount": 5,
                     "healthCheckGracePeriodSeconds": 300,
-                    "forceRedeploy": "${meta.variables.MICROSERVICE_REBUILD_BE}",
+                    "forceRedeploy": "${meta.microservices.MICROSERVICE_REBUILD_BE}",
                     "dockerBuild": {
-                      "context": "${meta.variables.DOCKER_CONTEXT}/${meta.variables.DOCKER_PROJECT_TEMPLATE}",
-                      "dockerfile": "${meta.variables.DOCKERFILE}/${meta.variables.DOCKER_PROJECT_TEMPLATE}/Dockerfile",
+                      "context": "${meta.variables_infra.DOCKER_CONTEXT}/${meta.variables_infra.DOCKER_PROJECT_TEMPLATE}",
+                      "dockerfile": "${meta.variables_infra.DOCKERFILE}/${meta.variables_infra.DOCKER_PROJECT_TEMPLATE}/Dockerfile",
                       "repositoryName": "${meta.variables.project}-be-ecr-repo",
                       "forceRebuild": true
                     },
