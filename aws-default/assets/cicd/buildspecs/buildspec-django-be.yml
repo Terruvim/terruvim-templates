@@ -1,0 +1,64 @@
+version: 0.2
+
+# Django Backend BuildSpec for AWS CodePipeline
+# Repository: Terruvim/demo-be
+
+phases:
+  pre_build:
+    commands:
+      - echo "Starting Django Backend build..."
+      - echo "Build started on $(date)"
+      - echo "AWS Region $AWS_DEFAULT_REGION"
+      
+      # Login to ECR
+      - echo "🔐 Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      
+      # Set image tag
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:-latest}
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO_NAME
+      
+      - echo "Repository $REPOSITORY_URI"
+      - echo "Image tag $IMAGE_TAG"
+
+  build:
+    commands:
+      - echo "Building Docker image..."
+      
+      # Build Docker image with build args
+      - |
+        docker build \
+          --build-arg DB_HOST=$DB_HOST \
+          --build-arg DB_PORT=$DB_PORT \
+          --build-arg DB_NAME=$DB_NAME \
+          --build-arg DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE \
+          --build-arg DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY \
+          -t $REPOSITORY_URI:$IMAGE_TAG \
+          -t $REPOSITORY_URI:latest \
+          -f Dockerfile .
+      
+      - echo "Docker image built successfully"
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image to ECR..."
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - docker push $REPOSITORY_URI:latest
+      
+      # Create imagedefinitions.json for ECS deployment
+      - echo "Creating image definitions..."
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      
+      - echo "Build completed on $(date)"
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - appspec.yml
+  discard-paths: yes
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'

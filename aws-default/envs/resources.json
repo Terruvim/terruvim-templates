@@ -1172,7 +1172,7 @@
                   "engineMode": "serverless",
                   "dbName": "${meta.variables.project}",
                   "username": "${meta.variables.project}",
-                  "password": "${secret:demo/global-secrets-base:DB_PASS}",
+                  "password": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}",
                   "dbParameterGroupName": "${meta.variables.project}-aurora-postgres-params",
                   "parameterGroupFamily": "aurora-postgresql17",
                   "parameters": [
@@ -1258,7 +1258,7 @@
                 "crossRegionBackup": {
                   "enabled": false,
                   "enableLambdaBackups": false,
-                  "backupRegion": "${secret:demo/global-secrets-base:BACKUP_REGION}",
+                  "backupRegion": "${secret:${meta.variables.project}/global-secrets-base:BACKUP_REGION}",
                   "globalDatabase": {
                     "enabled": false,
                     "globalClusterIdentifier": "global-${meta.environment}-${meta.variables.project}"
@@ -1331,7 +1331,7 @@
                   },
                   "replication": {
                     "enabled": false,
-                    "destinationRegion": "${secret:demo/global-secrets-base:BACKUP_REGION}",
+                    "destinationRegion": "${secret:${meta.variables.project}/global-secrets-base:BACKUP_REGION}",
                     "destinationBucket": "${meta.variables.project}-assets-bucket-backup-${meta.environment}",
                     "storageClass": "STANDARD_IA"
                   },
@@ -1480,8 +1480,8 @@
                 "alb-sg"
               ],
               "configuration": {
-                "domain": "application.${meta.environment}.${secret:demo/global-secrets-base:DNS}",
-                "hostedZoneId": "${secret:demo/global-secrets-base:HOSTED_ZONE_ID}",
+                "domain": "application.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
+                "hostedZoneId": "${secret:${meta.variables.project}/global-secrets-base:HOSTED_ZONE_ID}",
                 "enableCertProvisioning": true,
                 "waf": {
                   "enabled": false,
@@ -2088,7 +2088,7 @@
                     "dockerBuild": {
                       "context": "${meta.variables.DOCKER_CONTEXT}/django-backend",
                       "dockerfile": "${meta.variables.DOCKERFILE}/django-backend/Dockerfile",
-                      "repositoryName": "demo-be-ecr-repo",
+                      "repositoryName": "${meta.variables.project}-be-ecr-repo",
                       "forceRebuild": false
                     },
                     "logging": {
@@ -2216,12 +2216,12 @@
                       },
                       {
                         "name": "APP_BACKEND_URL",
-                        "value": "https://api.${meta.environment}.${secret:demo/global-secrets-base:DNS}/be",
+                        "value": "https://api.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/be",
                         "type": "PLAINTEXT"
                       },
                       {
                         "name": "APP_FRONTEND_URL",
-                        "value": "https://app.${meta.environment}.${secret:demo/global-secrets-base:DNS}",
+                        "value": "https://app.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
                         "type": "PLAINTEXT"
                       },
                       {
@@ -2234,31 +2234,31 @@
                       },
                       {
                         "name": "DB_NAME",
-                        "value": "${secret:demo/global-secrets-base:DB_NAME}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}"
                       },
                       {
                         "name": "DB_USER",
-                        "value": "${secret:demo/global-secrets-base:DB_USER}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_USER}"
                       },
                       {
                         "name": "DB_PASSWORD",
-                        "value": "${secret:demo/global-secrets-base:DB_PASS}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
                       },
                       {
                         "name": "DJANGO_SECRET_KEY",
-                        "value": "${secret:demo/global-secrets-base:DJANGO_SECRET_KEY}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SECRET_KEY}"
                       },
                       {
                         "name": "DJANGO_SETTINGS_MODULE",
-                        "value": "${secret:demo/global-secrets-base:DJANGO_SETTINGS_MODULE}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SETTINGS_MODULE}"
                       },
                       {
                         "name": "DJANGO_ALLOWED_HOSTS",
-                        "value": "${secret:demo/global-secrets-base:DJANGO_ALLOWED_HOSTS}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_ALLOWED_HOSTS}"
                       },
                       {
                         "name": "DJANGO_DEBUG",
-                        "value": "${secret:demo/global-secrets-base:DJANGO_DEBUG}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_DEBUG}"
                       },
                       {
                         "name": "AWS_REGION",
@@ -2310,7 +2310,7 @@
                       "buildEnvironmentVariables": [
                         {
                           "name": "AWS_ACCOUNT_ID",
-                          "value": "${secret:demo/global-secrets-base:ACCOUNT_ID}",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:ACCOUNT_ID}",
                           "type": "PLAINTEXT"
                         },
                         {
@@ -2320,7 +2320,7 @@
                         },
                         {
                           "name": "ECR_REPO_NAME",
-                          "value": "demo-be-ecr-repo",
+                          "value": "${meta.variables.project}-be-ecr-repo",
                           "type": "PLAINTEXT"
                         },
                         {
@@ -2340,7 +2340,7 @@
                         },
                         {
                           "name": "DB_NAME",
-                          "value": "${secret:demo/global-secrets-base:DB_NAME}",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}",
                           "type": "PLAINTEXT"
                         },
                         {
@@ -2350,7 +2350,7 @@
                         },
                         {
                           "name": "DJANGO_SECRET_KEY",
-                          "value": "${secret:demo/global-secrets-base:DJANGO_SECRET_KEY}",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SECRET_KEY}",
                           "type": "SECRETS_MANAGER"
                         }
                       ],
@@ -2370,7 +2370,7 @@
                         "Owner": "${meta.variables.owner}",
                         "NotificationEnabled": "true"
                       },
-                      "ecrRepositoryName": "demo-be-ecr-repo"
+                      "ecrRepositoryName": "${meta.variables.project}-be-ecr-repo"
                     },
                     "cloudwatchLogsDataProtection": {
                       "enabled": false,
@@ -2428,15 +2428,15 @@
                       },
                       {
                         "name": "DB_NAME",
-                        "value": "${secret:demo/global-secrets-base:DB_NAME}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}"
                       },
                       {
                         "name": "DB_USER",
-                        "value": "${secret:demo/global-secrets-base:DB_USER}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_USER}"
                       },
                       {
                         "name": "DB_PASSWORD",
-                        "value": "${secret:demo/global-secrets-base:DB_PASS}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
                       }
                     ]
                   },
@@ -2617,7 +2617,7 @@
                   "inputs": {
                     "providers": "dev-us-east-1",
                     "route53Provider": "root",
-                    "hostedZoneId": "${secret:demo/global-secrets-base:HOSTED_ZONE_ID}"
+                    "hostedZoneId": "${secret:${meta.variables.project}/global-secrets-base:HOSTED_ZONE_ID}"
                   },
                   "outputs": {
                     "distributionId": true
@@ -2673,10 +2673,10 @@
                     "cloudfront": {
                       "enabled": true,
                       "aliases": [
-                        "app.${meta.environment}.${secret:demo/global-secrets-base:DNS}"
+                        "app.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}"
                       ],
                       "enableCertProvisioning": true,
-                      "hostedZoneId": "${secret:demo/global-secrets-base:HOSTED_ZONE_ID}",
+                      "hostedZoneId": "${secret:${meta.variables.project}/global-secrets-base:HOSTED_ZONE_ID}",
                       "priceClass": "PriceClass_100",
                       "enableWaf": true,
                       "wafConfig": {
@@ -2804,12 +2804,12 @@
                       "buildEnvironmentVariables": [
                         {
                           "name": "VITE_API_URL",
-                          "value": "https://api.${meta.environment}.${secret:demo/global-secrets-base:DNS}/be/api/v1/",
+                          "value": "https://api.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/be/api/v1/",
                           "type": "PLAINTEXT"
                         },
                         {
                           "name": "VITE_API_NO_API_VER",
-                          "value": "https://api.${meta.environment}.${secret:demo/global-secrets-base:DNS}/be/",
+                          "value": "https://api.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/be/",
                           "type": "PLAINTEXT"
                         },
                         {
@@ -2844,17 +2844,17 @@
                         },
                         {
                           "name": "SONAR_PROJECT_KEY_SECRET",
-                          "value": "${secret:demo/global-secrets-base:SONAR_PROJECT_KEY}",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:SONAR_PROJECT_KEY}",
                           "type": "PLAINTEXT"
                         },
                         {
                           "name": "SONAR_ORGANIZATION",
-                          "value": "${secret:demo/global-secrets-base:SONAR_ORGANIZATION}",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:SONAR_ORGANIZATION}",
                           "type": "PLAINTEXT"
                         },
                         {
                           "name": "SONAR_TOKEN",
-                          "value": "${secret:demo/global-secrets-base:SONAR_TOKEN}",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:SONAR_TOKEN}",
                           "type": "PLAINTEXT"
                         },
                         {
