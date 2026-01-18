@@ -2,7 +2,9 @@
   "name": "teruvim",
   "version": "1.0.0",
   "scripts": {
-    "up": "pulumi up",
+    "setup": "terruvim-cli setup",
+    "up": "terruvim-cli up",
+    "pulumi-up": "pulumi up",
     "preview": "pulumi preview",
     "destroy": "pulumi destroy",
     "create-service": "ts-node ./scripts/create-service.ts"

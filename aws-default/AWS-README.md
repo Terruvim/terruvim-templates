@@ -63,7 +63,7 @@ Initial Login
 Login to the Pulumi backend (Service or Local):
 
 ```bash
-  pulumi login
+  terruvim-cli setup
 ```
 
 ### Select an Environment (Stack)
@@ -88,7 +88,7 @@ Before applying any changes, always run a preview to see what will happen:
 ### Deploy Infrastructure
 To provision or update resources in the cloud:
 ```bash
-  pulumi up
+  terruvim-cli up
 ```
 _Select "yes" when prompted to confirm._
 
