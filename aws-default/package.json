@@ -15,7 +15,8 @@
     "js-yaml": "^4.1.0",
     "lodash.merge": "^4.6.2",
     "lodash.mergewith": "^4.6.2",
-    "node-forge": "^1.3.1"
+    "node-forge": "^1.3.1",
+    "terruvim-core-test": "^0.0.1"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
