@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "version": "0.1"
+  },
+  "👋[info]": {
+    "comments": "AWS default DEMO infrastructure"
+  },
+  "🔐[global_secrets]": {
+    "l3_secretsManagerFactory": []
+  }
+}
