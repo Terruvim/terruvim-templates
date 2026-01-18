@@ -1,126 +1,64 @@
 version: 0.2
 
-phases:
-  install:
-    runtime-versions:
-      java: corretto21
-    commands:
-      - echo "🔧 Installing dependencies..."
-      - echo "Installing required tools"
-      - apt-get update -qq && apt-get install -y jq
+# Django Backend BuildSpec for AWS CodePipeline
+# Repository: Terruvim/demo-be
 
+phases:
   pre_build:
     commands:
-      - echo "🔍 Pre-build phase started on $(date)"
-      - echo "Environment $STAGE"
-      - echo "ECR Repository $ECR_REPO_URI"
-      - echo "Container Name $CONTAINER_NAME"
-      - echo "Image Tag $IMAGE_TAG"
-      - echo "🐳 Setting up Docker environment..."
-
-      - mkdir -p /var/run
-      - rm -f /var/run/docker.sock
-      - echo "🐳 Starting Docker daemon..."
-      - nohup /usr/local/bin/dockerd --host=tcp://127.0.0.1:2375
-        --storage-driver=overlay2 --insecure-registry $ECR_REPO_URI >
-        /tmp/dockerd.log 2>&1 &
-      - export DOCKER_HOST=tcp://127.0.0.1:2375
-      - echo "⏳ Waiting for Docker daemon to be ready..."
-      - timeout 30 sh -c "until docker info > /dev/null 2>&1; do echo 'Waiting
-        for Docker...'; sleep 2; done"
-      - echo "✅ Docker daemon is ready"
-      - docker info
-
-      - echo "🔑 Authenticating to ECR..."
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login
-        --username AWS --password-stdin $ECR_REPO_URI
-
-      - echo "📋 Setting up environment for Spring Boot build..."
-      - echo "Java version:"
-      - java -version
-      - echo "Gradle version:"
-      - ./gradlew --version
+      - echo "Starting Django Backend build..."
+      - echo "Build started on $(date)"
+      - echo "AWS Region $AWS_DEFAULT_REGION"
+      
+      # Login to ECR
+      - echo "🔐 Logging in to Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      
+      # Set image tag
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:-latest}
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO_NAME
+      
+      - echo "Repository $REPOSITORY_URI"
+      - echo "Image tag $IMAGE_TAG"
 
   build:
     commands:
-      - echo "🏗 Building Spring Boot application..."
-      - echo "Build started on $(date)"
-
-      - echo "🧪 Running tests..."
-      - ./gradlew clean test --info
-
-      - echo "📦 Building JAR file..."
-      - ./gradlew build -x test --info
-      - echo "✅ JAR build completed"
-
-      - echo "📁 Listing build artifacts..."
-      - ls -la build/libs/
-
-      - echo "� Building Docker image using existing Dockerfile..."
-      - docker build -t $ECR_REPO_NAME:$IMAGE_TAG .
-      - docker tag $ECR_REPO_NAME:$IMAGE_TAG $ECR_REPO_URI:$IMAGE_TAG
-      - echo "✅ Docker image built successfully"
+      - echo "Building Docker image..."
+      
+      # Build Docker image with build args
+      - |
+        docker build \
+          --build-arg DB_HOST=$DB_HOST \
+          --build-arg DB_PORT=$DB_PORT \
+          --build-arg DB_NAME=$DB_NAME \
+          --build-arg DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE \
+          --build-arg DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY \
+          -t $REPOSITORY_URI:$IMAGE_TAG \
+          -t $REPOSITORY_URI:latest \
+          -f Dockerfile .
+      
+      - echo "Docker image built successfully"
 
   post_build:
     commands:
-      - echo "📤 Post-build phase started..."
-      - echo "🚀 Pushing Docker image to ECR..."
-      - docker push $ECR_REPO_URI:$IMAGE_TAG
-      - echo "✅ Docker image pushed successfully"
-      - echo "📝 Generating imagedefinitions.json for ECS deployment..."
-      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME"
-        "$ECR_REPO_URI:$IMAGE_TAG" > imagedefinitions.json
-      - echo "Generated imagedefinitions.json:"
+      - echo "Pushing Docker image to ECR..."
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - docker push $REPOSITORY_URI:latest
+      
+      # Create imagedefinitions.json for ECS deployment
+      - echo "Creating image definitions..."
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      
+      - echo "Build completed on $(date)"
       - cat imagedefinitions.json
-      - echo "🎉 Build completed successfully on $(date)"
 
 artifacts:
   files:
     - imagedefinitions.json
-  name: backend-build-artifacts-$(date +%Y-%m-%d-%H-%M-%S)
+    - appspec.yml
+  discard-paths: yes
 
 cache:
   paths:
-    - /root/.gradle/caches/**/*
-    - /root/.gradle/wrapper/**/*
-
-reports:
-  junit:
-    files:
-      - build/test-results/test/TEST-*.xml
-    base-directory: .
-    file-format: JUNITXML
-Resources:
-  UserPool:
-    Type: AWS::Cognito::UserPool
-    Properties:
-      AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: false
-      AliasAttributes:
-        - email
-        - preferred_username
-      UserPoolName: !Sub ${AWS::StackName}-UserPool
-  Table:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-      BillingMode: PAY_PER_REQUEST
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      StreamSpecification:
-        StreamViewType: NEW_AND_OLD_IMAGES
-  EventRule:
-    Type: AWS::Events::Rule
-    Properties:
-      EventPattern:
-        source:
-          - aws.health
-Metadata:
-  AWS::Composer::Groups:
-    Group:
-      Label: Group
-      Members:
-        - UserPool
+    - '/root/.cache/pip/**/*'

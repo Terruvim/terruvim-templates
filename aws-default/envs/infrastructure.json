@@ -1,11 +1,173 @@
 {
   "meta": {
-    "version": "0.1"
+    "version": "0.1",
+    "description": "Well-Architected, Secure Infrastructure for Django Demo Project (multi-account, multi-env)",
+    "environment": "AUTO",
+    "account": "AUTO",
+    "region": "us-east-1",
+    "variables_infra": {
+      "CODEBUILD_IMAGE": "aws/codebuild/standard:7.0",
+      "CODEBUILD_IMAGE_OLD": "aws/codebuild/amazonlinux2-x86_64-standard:5.0",
+      "CODEBUILD_INSTANCE_TYPE": "BUILD_GENERAL1_LARGE"
+    },
+    "variables": {
+      "secret": {
+        "secret": "TOP-SECRET"
+      },
+      "parameters": {},
+      "application": {},
+      "infra": {},
+      "owner": "terruvim",
+      "project": "demo",
+      "region": "us-east-1",
+      "cidrMain": "10.0.0.0/16",
+      "cidrSubnetPublicA": "10.0.1.0/24",
+      "cidrSubnetPublicB": "10.0.2.0/24",
+      "cidrSubnetPrivateA": "10.0.101.0/24",
+      "cidrSubnetPrivateB": "10.0.102.0/24",
+      "cidrSubnetDatabaseA": "10.0.201.0/24",
+      "cidrSubnetDatabaseB": "10.0.202.0/24",
+      "DOCKER_CONTEXT": "../../../lightweight/deployments/pr_goit/assets/docker",
+      "DOCKERFILE": "/Users/anton/Desktop/lightweight/deployments/pr_goit/assets/docker",
+      "frontendRepoOwner": "{{{YourOrganization",
+      "frontendRepoName": "{{{your-frontend-repo}}}",
+      "frontendBranch": "{{{main}}}",
+      "backendRepoOwner": "{{{YourOrganization}}}",
+      "backendRepoName": "{{{your-backend-repo}}}",
+      "backendBranch": "{{{main}}}"
+    },
+    "providers": {
+      "root": {
+        "id": "provider-root",
+        "region": "us-east-1",
+        "profile": "demo-dev"
+      },
+      "dev": {
+        "id": "provider-dev",
+        "region": "us-east-1",
+        "profile": "demo-dev"
+      },
+      "dev-us-east-1": {
+        "id": "provider-dev-us-east-1",
+        "region": "us-east-1",
+        "profile": "demo-dev"
+      }
+    },
+    "overlays": [
+      "dev",
+      "stage",
+      "prod"
+    ],
+    "featureFlags": {
+      "FLAG_github-codestar-connection": true,
+      "FLAG_codepipeline-artifacts-bucket": true,
+      "FLAG_cloudfront-service-role": true,
+      "FLAG_cloudfront-pipeline-role": true,
+      "FLAG_main-networking": true,
+      "FLAG_aurora-postgres-sg": true,
+      "FLAG_aurora-postgres-cluster": true,
+      "FLAG_db-rds-postgres": false,
+      "FLAG_lambda-code-storage": true,
+      "FLAG_assets-bucket": true,
+      "FLAG_alb-sg": true,
+      "FLAG_from-ingress-http-to-alb": true,
+      "FLAG_from-ingress-http-eight-to-alb": true,
+      "FLAG_from-ingress-https-to-alb": true,
+      "FLAG_from-egress-all-to-alb": true,
+      "FLAG_alb": true,
+      "FLAG_ecs-cluster": true,
+      "FLAG_be-ecs-sg": false,
+      "FLAG_be-codepipelines-sg": true,
+      "FLAG_from-alb-to-ecs-be": false,
+      "FLAG_from-egress-all-to-ecs-be": true,
+      "FLAG_from-ecs-be-to-aurora-serverless": true,
+      "FLAG_from-ingress-vpc-to-pipeline-be": true,
+      "FLAG_from-egress-secure-to-pipeline-be": true,
+      "FLAG_from-egress-vpc-endpoints-to-pipeline-be": true,
+      "FLAG_ecs-service-be": false,
+      "FLAG_pipeline-ecs-service-be": true,
+      "FLAG_cloudfront-codepipeline-sg": true,
+      "FLAG_from-ingress-vpc-to-cloudfront-pipeline": true,
+      "FLAG_from-egress-internet-to-cloudfront-pipeline": true,
+      "FLAG_from-egress-http-to-cloudfront-pipeline": true,
+      "FLAG_from-egress-dns-to-cloudfront-pipeline": true,
+      "FLAG_from-egress-dns-udp-to-cloudfront-pipeline": true,
+      "FLAG_from-egress-vpc-endpoints-to-cloudfront-pipeline": true,
+      "FLAG_cloudfront": true,
+      "FLAG_cloudfront-cicd": true,
+      "FLAG_app-sg": true
+    },
+    "tags": {
+      "Project": "${meta.variables.project}",
+      "Environment": "${meta.environment}",
+      "Owner": "${meta.variables.owner}"
+    },
+    "env_vars": {},
+    "outputs": {
+      "vpcId": "main-networking.vpcId",
+      "publicSubnetIds": "main-networking.publicSubnetIds",
+      "privateSubnetIds": "main-networking.privateSubnetIds",
+      "isolatedSubnetIds": "main-networking.isolatedSubnetIds",
+      "natGatewayIds": "main-networking.natGatewayIds",
+      "vpcEndpointIds": "main-networking.vpcEndpointIds",
+      "defaultSecurityGroupId": "main-networking.defaultSecurityGroupId"
+    }
   },
   "👋[info]": {
-    "comments": "AWS default DEMO infrastructure"
+    "comments": "Django Demo Project infrastructure. BE: Django REST Framework, FE: React/Vite. Repositories: Terruvim/demo-be, Terruvim/demo-fe",
+    "deployment_instructions": "This infrastructure is designed to be deployed in a multi-account, multi-environment setup. Each environment (dev, stage, prod) should have its own account and resources. Use the provided variables and secrets to configure your deployment.",
+    "todo": [
+      "[]"
+    ]
   },
   "🔐[global_secrets]": {
-    "l3_secretsManagerFactory": []
+    "l3_secretsManagerFactory": [
+      {
+        "enabled": true,
+        "id": "global-secrets",
+        "outputs": {
+          "arn": true,
+          "name": true
+        },
+        "inputs": {},
+        "dependsOn": [],
+        "configuration": {
+          "name": "${meta.variables.project}/global-secrets-base",
+          "description": "Global secrets for Django Demo project",
+          "secretString": {
+            "ACCOUNT_ID": "123456789012",
+            "AWS_ACCOUNT_ID": "123456789012",
+            "GITHUB_REPO_OWNER": "Terruvim",
+            "GITHUB_TOKEN": "ghp_your_github_token_here_XXXXXXXXXXXXXXXXXXXXX",
+            "GITHUB_USERNAME": "your-github-username",
+            "GITHUB_REPO_BE": "demo-be",
+            "GITHUB_REPO_FE": "demo-fe",
+            "GITHUB_REPO_DE": "demo-de",
+            "OWNER": "terruvim",
+            "PROJECT": "demo",
+            "REGION": "us-east-1",
+            "BACKUP_REGION": "eu-west-3",
+            "DNS": "example.com",
+            "HOSTED_ZONE_ID": "XXXXXXXXXXXXXXXXXXXX",
+            "MY_IP": "0.0.0.0",
+            "SONAR_PROJECT_KEY": "your-org_your-project",
+            "SONAR_ORGANIZATION": "your-sonar-org",
+            "SONAR_TOKEN": "your-sonar-token-XXXXXXXXXXXXXXXXXXXXXXXX",
+            "DB_URL": "demo",
+            "DB_NAME": "demo",
+            "DB_USER": "demo",
+            "DB_PASS": "demo12345678",
+            "REDIS_AUTH_TOKEN": "your-redis-secure-token-XXXXXXXXXXXXXXXXXXXXXXX",
+            "API_KEY": "<your-api-key>",
+            "TERRUVIM_API_KEY": "your-terruvim-api-key-base64-encoded-XXXXXXX",
+            "DEFAULT_EMAILS": "your-email@example.com",
+            "DJANGO_SECRET_KEY": "django-insecure-change-me-in-production-XXXXXXXXXXXXXX",
+            "DJANGO_SETTINGS_MODULE": "config.settings.production",
+            "DJANGO_ALLOWED_HOSTS": "*",
+            "DJANGO_DEBUG": "False"
+          }
+        }
+      }
+    ]
   }
 }
