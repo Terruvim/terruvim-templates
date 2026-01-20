@@ -1,0 +1,74 @@
+version: 0.2
+
+# BuildSpec for React Landing Page
+# Builds a static React/Vite application and deploys to S3 + CloudFront
+# Repository: Terruvim/demo-landing
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - echo "Installing dependencies..."
+      - node --version
+      - npm --version
+      
+  pre_build:
+    commands:
+      - echo "Pre-build phase started on `date`"
+      - echo "Installing project dependencies..."
+      - echo "Verifying vite installation..."
+      - echo "Environment variables:"
+      - echo "VITE_APP_URL=$VITE_APP_URL"
+      - echo "VITE_FE_URL=$VITE_FE_URL"
+      - echo "VITE_API_URL=$VITE_API_URL"
+      - echo "VITE_ADMIN_URL=$VITE_ADMIN_URL"
+      - echo "VITE_ENVIRONMENT=$VITE_ENVIRONMENT"
+      - echo "NODE_ENV=$NODE_ENV"
+      - echo "Pre-build phase started on `date`"
+      - echo "Installing project dependencies..."
+      - export NPM_CONFIG_PRODUCTION=false
+      - npm ci --include=dev || npm install --include=dev
+      - echo "Verifying vite installation..."
+      - ./node_modules/.bin/vite --version
+      
+      
+      
+
+      
+  build:
+    commands:
+      - echo "Build phase started on `date`"
+      - echo "Building React application..."
+      - npm run build
+      - echo "Build completed successfully"
+      - ls -la dist/
+      
+  post_build:
+    commands:
+      - echo "Post-build phase started on `date`"
+      - echo "Syncing build artifacts to S3 bucket $S3_BUCKET"
+      - aws s3 sync dist/ s3://${S3_BUCKET}/ --delete --cache-control "public, max-age=31536000, immutable"
+      - aws s3 cp s3://${S3_BUCKET}/index.html s3://${S3_BUCKET}/index.html --metadata-directive REPLACE --cache-control "public, max-age=0, must-revalidate" --content-type "text/html"
+      - echo "Creating CloudFront invalidation for distribution $CLOUDFRONT_DISTRIBUTION_ID"
+      - |
+        INVALIDATION_ID=$(aws cloudfront create-invalidation \
+          --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} \
+          --paths "/*" \
+          --query 'Invalidation.Id' \
+          --output text)
+      - echo "CloudFront invalidation created with ID $INVALIDATION_ID"
+      - echo "Waiting for invalidation to complete..."
+      - aws cloudfront wait invalidation-completed --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --id ${INVALIDATION_ID}
+      - echo "Deployment completed successfully on `date`"
+      - echo "Landing page available at https://app.${VITE_ENVIRONMENT}.YOUR-DNS.com"
+
+artifacts:
+  files:
+    - '**/*'
+  base-directory: dist
+  discard-paths: no
+
+cache:
+  paths:
+    - 'node_modules/**/*'

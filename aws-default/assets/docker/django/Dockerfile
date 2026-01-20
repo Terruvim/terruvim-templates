@@ -28,6 +28,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
+    netcat-openbsd \
+    dnsutils \
+    iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy wheels from builder
@@ -40,23 +43,39 @@ RUN pip install --no-cache /wheels/*
 # Copy application code
 COPY --chown=django:django . .
 
-# Collect static files
-RUN python manage.py collectstatic --noinput || true
+# Create directories with proper permissions before switching user
+RUN mkdir -p /app/staticfiles /app/media && \
+    chmod 755 /app/staticfiles /app/media && \
+    chown -R django:django /app
+
+# Copy entrypoint script
+COPY --chown=django:django entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Copy superuser creation script
+COPY --chown=django:django create_superuser.py /app/create_superuser.py
+
+# Copy debug script
+COPY --chown=django:django debug.sh /debug.sh
+RUN chmod +x /debug.sh
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DJANGO_SETTINGS_MODULE=config.settings.production
+ENV DJANGO_SETTINGS_MODULE=config.settings
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health/ || exit 1
+    CMD curl -f http://localhost:8080/api/health/ || exit 1
 
 # Switch to non-root user
 USER django
 
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
 # Run with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "2", "--worker-class", "gthread", "--access-logfile", "-", "--error-logfile", "-", "config.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "--threads", "2", "--worker-class", "gthread", "--access-logfile", "-", "--error-logfile", "-", "config.wsgi:application"]

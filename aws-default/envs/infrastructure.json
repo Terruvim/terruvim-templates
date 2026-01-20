@@ -1,7 +1,7 @@
 {
   "meta": {
     "version": "0.1",
-    "description": "Well-Architected, Secure Infrastructure for Django Demo Project (multi-account, multi-env)",
+    "description": "Well-Architected, Secure Infrastructure for Terruvim Demo Project (multi-account, multi-env)",
     "environment": "AUTO",
     "account": "AUTO",
     "region": "us-east-1",
@@ -11,7 +11,9 @@
       "CODEBUILD_INSTANCE_TYPE": "BUILD_GENERAL1_LARGE",
       "DOCKER_PROJECT_TEMPLATE": "django",
       "DOCKER_CONTEXT": "./assets/docker",
-      "DOCKERFILE": "./assets/docker"
+      "DOCKERFILE": "./assets/docker",
+      "DOCKER_CONTEXT_FE": "./assets/docker/next",
+      "DOCKERFILE_FE": "./assets/docker/next"
     },
     "variables": {
       "secret": {
@@ -30,15 +32,24 @@
       "cidrSubnetPrivateB": "10.0.102.0/24",
       "cidrSubnetDatabaseA": "10.0.201.0/24",
       "cidrSubnetDatabaseB": "10.0.202.0/24",
-      "frontendRepoOwner": "{{{YourOrganization",
-      "frontendRepoName": "{{{your-frontend-repo}}}",
-      "frontendBranch": "{{{main}}}",
-      "backendRepoOwner": "{{{YourOrganization}}}",
-      "backendRepoName": "{{{your-backend-repo}}}",
-      "backendBranch": "{{{main}}}"
+      "frontendRepoOwner": "Terruvim",
+      "frontendRepoName": "demo-fe",
+      "frontendBranch": "main",
+      "backendRepoOwner": "Terruvim",
+      "backendRepoName": "demo-be",
+      "backendBranch": "main",
+      "adminRepoOwner": "Terruvim",
+      "adminRepoName": "demo-admin",
+      "adminBranch": "main",
+      "landingRepoOwner": "Terruvim",
+      "landingRepoName": "demo-landing",
+      "landingBranch": "main"
     },
     "microservices": {
-      "MICROSERVICE_REBUILD_BE": "forceRedeploy1"
+      "MICROSERVICE_REBUILD_BE": "forceRedeploy01",
+      "MICROSERVICE_REBUILD_ADMIN": "forceRedeploy01",
+      "MICROSERVICE_REBUILD_FE": "forceRedeploy01",
+      "MICROSERVICE_REBUILD_LANDING": "forceRedeploy01"
     },
     "providers": {},
     "overlays": [
@@ -49,12 +60,9 @@
     "featureFlags": {
       "FLAG_github-codestar-connection": true,
       "FLAG_codepipeline-artifacts-bucket": true,
-      "FLAG_cloudfront-service-role": true,
-      "FLAG_cloudfront-pipeline-role": true,
       "FLAG_main-networking": true,
       "FLAG_aurora-postgres-sg": true,
       "FLAG_aurora-postgres-cluster": true,
-      "FLAG_db-rds-postgres": false,
       "FLAG_lambda-code-storage": true,
       "FLAG_assets-bucket": true,
       "FLAG_alb-sg": true,
@@ -74,6 +82,27 @@
       "FLAG_from-egress-vpc-endpoints-to-pipeline-be": true,
       "FLAG_ecs-service-be": true,
       "FLAG_pipeline-ecs-service-be": true,
+      "FLAG_admin-ecs-sg": true,
+      "FLAG_admin-codepipelines-sg": true,
+      "FLAG_from-alb-to-ecs-admin": true,
+      "FLAG_from-egress-all-to-ecs-admin": true,
+      "FLAG_from-ecs-admin-to-aurora-serverless": true,
+      "FLAG_from-ingress-vpc-to-pipeline-admin": true,
+      "FLAG_from-egress-secure-to-pipeline-admin": true,
+      "FLAG_from-egress-vpc-endpoints-to-pipeline-admin": true,
+      "FLAG_pipeline-ecs-service-admin": true,
+      "FLAG_ecs-service-admin": true,
+      "FLAG_fe-ecs-sg": true,
+      "FLAG_from-alb-to-ecs-fe": true,
+      "FLAG_from-egress-all-to-ecs-fe": true,
+      "FLAG_ecs-service-fe": true,
+      "FLAG_pipeline-ecs-service-fe": true,
+      "FLAG_fe-codepipelines-sg": true,
+      "FLAG_from-ingress-vpc-to-pipeline-fe": true,
+      "FLAG_from-egress-secure-to-pipeline-fe": true,
+      "FLAG_from-egress-vpc-endpoints-to-pipeline-fe": true,
+      "FLAG_cloudfront-service-role": true,
+      "FLAG_cloudfront-pipeline-role": true,
       "FLAG_cloudfront-codepipeline-sg": true,
       "FLAG_from-ingress-vpc-to-cloudfront-pipeline": true,
       "FLAG_from-egress-internet-to-cloudfront-pipeline": true,
@@ -102,7 +131,7 @@
     }
   },
   "👋[info]": {
-    "comments": "Django Demo Project infrastructure. BE: Django REST Framework, FE: React/Vite. Repositories: Terruvim/demo-be, Terruvim/demo-fe",
+    "comments": "Demo Project infrastructure. BE: Nest, FE: Next, ADMIN: Django REST Framework, LANDING: React/Vite. Repositories: Terruvim/demo-be, Terruvim/demo-fe, Terruvim/demo-fe-admin, Terruvim/demo-landing",
     "deployment_instructions": "This infrastructure is designed to be deployed in a multi-account, multi-environment setup. Each environment (dev, stage, prod) should have its own account and resources. Use the provided variables and secrets to configure your deployment.",
     "todo": [
       "[]"
@@ -121,7 +150,7 @@
         "dependsOn": [],
         "configuration": {
           "name": "${meta.variables.project}/global-secrets-base",
-          "description": "Global secrets for Django Demo project",
+          "description": "Global secrets for Terruvim Demo project",
           "secretString": {
             "ACCOUNT_ID": "123456789012",
             "AWS_ACCOUNT_ID": "123456789012",
@@ -142,8 +171,8 @@
             "SONAR_ORGANIZATION": "your-sonar-org",
             "SONAR_TOKEN": "your-sonar-token-XXXXXXXXXXXXXXXXXXXXXXXX",
             "DB_URL": "demo",
-            "DB_NAME": "demo",
-            "DB_USER": "demo",
+            "DB_NAME": "project42",
+            "DB_USER": "project42",
             "DB_PASS": "demo12345678",
             "DB_PORT": "5432",
             "REDIS_AUTH_TOKEN": "your-redis-secure-token-XXXXXXXXXXXXXXXXXXXXXXX",
@@ -151,9 +180,12 @@
             "TERRUVIM_API_KEY": "your-terruvim-api-key-base64-encoded-XXXXXXX",
             "DEFAULT_EMAILS": "your-email@example.com",
             "DJANGO_SECRET_KEY": "django-insecure-change-me-in-production-XXXXXXXXXXXXXX",
-            "DJANGO_SETTINGS_MODULE": "config.settings.production",
+            "DJANGO_SETTINGS_MODULE": "config.settings",
             "DJANGO_ALLOWED_HOSTS": "*",
-            "DJANGO_DEBUG": "False"
+            "DJANGO_DEBUG": "False",
+            "DJANGO_SUPERUSER_EMAIL": "user@yourdns.com",
+            "DJANGO_SUPERUSER_USERNAME": "admin",
+            "DJANGO_SUPERUSER_PASSWORD": "admin"
           }
         }
       }

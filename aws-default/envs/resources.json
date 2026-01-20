@@ -1690,34 +1690,6 @@
                   "configuration": {
                     "description": "BE CODEPIPELINES SG"
                   }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_lambda-sg}",
-                  "id": "lambda-sg",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "vpcId": "${output:main-networking.vpcId}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "description": "LAMBDA FUNCTIONS SG"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_lambda-codepipeline-sg}",
-                  "id": "lambda-codepipeline-sg",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "vpcId": "${output:main-networking.vpcId}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "description": "LAMBDA CODEPIPELINES SG"
-                  }
                 }
               ],
               "l3_securityGroupRulesFactory": [
@@ -1817,13 +1789,13 @@
                   "configuration": {
                     "securityGroupId": "${output:be-codepipelines-sg.id}",
                     "type": "egress",
-                    "fromPort": 443,
-                    "toPort": 443,
-                    "protocol": "tcp",
+                    "fromPort": 0,
+                    "toPort": 0,
+                    "protocol": "-1",
                     "cidrBlocks": [
                       "0.0.0.0/0"
                     ],
-                    "description": "HTTPS to internet for GitHub and AWS services"
+                    "description": "Allow all outbound traffic for CodePipeline"
                   }
                 },
                 {
@@ -1846,179 +1818,6 @@
                       "${meta.variables.cidrMain}"
                     ],
                     "description": "HTTPS to VPC endpoints for AWS services"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_lambda-sg}",
-                  "id": "from-lambda-to-aurora-serverless",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:aurora-postgres-sg.id}",
-                    "sourceSecurityGroupId": "${output:lambda-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:aurora-postgres-sg.id}",
-                    "type": "ingress",
-                    "fromPort": 5432,
-                    "toPort": 5432,
-                    "protocol": "tcp",
-                    "sourceSecurityGroupId": "${output:lambda-sg.id}",
-                    "description": "Lambda to Aurora PostgreSQL"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_lambda-sg}",
-                  "id": "from-lambda-to-redis",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:redis-sg.id}",
-                    "sourceSecurityGroupId": "${output:lambda-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:redis-sg.id}",
-                    "type": "ingress",
-                    "fromPort": 6379,
-                    "toPort": 6379,
-                    "protocol": "tcp",
-                    "sourceSecurityGroupId": "${output:lambda-sg.id}",
-                    "description": "Lambda to Redis"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_lambda-sg}",
-                  "id": "lambda-egress-all",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:lambda-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:lambda-sg.id}",
-                    "type": "egress",
-                    "fromPort": 0,
-                    "toPort": 65535,
-                    "protocol": "tcp",
-                    "cidrBlocks": [
-                      "0.0.0.0/0"
-                    ],
-                    "description": "Lambda egress to all destinations"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_from-lambda-codepipeline-to-aurora-serverless}",
-                  "id": "from-lambda-codepipeline-to-aurora-serverless",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:aurora-postgres-sg.id}",
-                    "sourceSecurityGroupId": "${output:lambda-codepipeline-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:aurora-postgres-sg.id}",
-                    "type": "ingress",
-                    "fromPort": 5432,
-                    "toPort": 5432,
-                    "protocol": "tcp",
-                    "sourceSecurityGroupId": "${output:lambda-codepipeline-sg.id}",
-                    "description": "Lambda CodePipeline to Aurora PostgreSQL for migrations"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_from-ingress-vpc-to-lambda-pipeline}",
-                  "id": "from-ingress-vpc-to-lambda-pipeline",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:lambda-codepipeline-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:lambda-codepipeline-sg.id}",
-                    "type": "ingress",
-                    "fromPort": 443,
-                    "toPort": 443,
-                    "protocol": "tcp",
-                    "cidrBlocks": [
-                      "${meta.variables.cidrMain}"
-                    ],
-                    "description": "HTTPS from VPC for Lambda pipeline AWS service access"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_from-egress-secure-to-lambda-pipeline}",
-                  "id": "from-egress-secure-to-lambda-pipeline",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:lambda-codepipeline-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:lambda-codepipeline-sg.id}",
-                    "type": "egress",
-                    "fromPort": 443,
-                    "toPort": 443,
-                    "protocol": "tcp",
-                    "cidrBlocks": [
-                      "0.0.0.0/0"
-                    ],
-                    "description": "HTTPS egress from Lambda pipeline to internet"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_from-egress-vpc-endpoints-to-lambda-pipeline}",
-                  "id": "from-egress-vpc-endpoints-to-lambda-pipeline",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:lambda-codepipeline-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:lambda-codepipeline-sg.id}",
-                    "type": "egress",
-                    "fromPort": 443,
-                    "toPort": 443,
-                    "protocol": "tcp",
-                    "cidrBlocks": [
-                      "${meta.variables.cidrMain}"
-                    ],
-                    "description": "HTTPS egress to VPC endpoints for Lambda pipeline AWS services"
-                  }
-                },
-                {
-                  "enabled": "${meta.featureFlags.FLAG_from-lambda-codepipeline-to-aurora-serverless}",
-                  "id": "lambda-codepipeline-egress-postgres",
-                  "outputs": {
-                    "id": true
-                  },
-                  "inputs": {
-                    "securityGroupId": "${output:lambda-codepipeline-sg.id}"
-                  },
-                  "dependsOn": [],
-                  "configuration": {
-                    "securityGroupId": "${output:lambda-codepipeline-sg.id}",
-                    "type": "egress",
-                    "fromPort": 5432,
-                    "toPort": 5432,
-                    "protocol": "tcp",
-                    "cidrBlocks": [
-                      "${meta.variables.cidrMain}"
-                    ],
-                    "description": "PostgreSQL egress from Lambda CodePipeline for database migrations"
                   }
                 }
               ]
@@ -2052,8 +1851,29 @@
                   ],
                   "configuration": {
                     "name": "be",
-                    "path": "/*",
-                    "healthCheckPath": "/",
+                    "albListenerRules": [
+                      {
+                        "_comment": "Transform URL: Strips /api prefix from incoming requests before forwarding to NestJS container. Pulumi AWS provider uses urlRewriteConfig (not type field) to apply URL transforms.",
+                        "priority": 100,
+                        "conditions": {
+                          "pathPatterns": [
+                            "/api/*"
+                          ]
+                        },
+                        "transforms": [
+                          {
+                            "type": "url-rewrite",
+                            "urlRewriteConfig": {
+                              "rewrite": {
+                                "regex": "^/api(/.*)$",
+                                "replace": "$1"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    "healthCheckPath": "/health",
                     "healthCheckIntervalSeconds": 30,
                     "healthCheckTimeoutSeconds": 5,
                     "healthyThresholdCount": 2,
@@ -2061,8 +1881,8 @@
                     "healthCheckGracePeriodSeconds": 300,
                     "forceRedeploy": "${meta.microservices.MICROSERVICE_REBUILD_BE}",
                     "dockerBuild": {
-                      "context": "${meta.variables_infra.DOCKER_CONTEXT}/${meta.variables_infra.DOCKER_PROJECT_TEMPLATE}",
-                      "dockerfile": "${meta.variables_infra.DOCKERFILE}/${meta.variables_infra.DOCKER_PROJECT_TEMPLATE}/Dockerfile",
+                      "context": "${meta.variables_infra.DOCKER_CONTEXT}/nest",
+                      "dockerfile": "${meta.variables_infra.DOCKERFILE}/nest/Dockerfile",
                       "repositoryName": "${meta.variables.project}-be-ecr-repo",
                       "forceRebuild": true
                     },
@@ -2085,9 +1905,9 @@
                       }
                     },
                     "port": 8080,
-                    "desiredCount": 1,
-                    "minCapacity": 1,
-                    "maxCapacity": 2,
+                    "desiredCount": 2,
+                    "minCapacity": 2,
+                    "maxCapacity": 4,
                     "cpu": 2048,
                     "memory": 4096,
                     "autoScaling": {
@@ -2175,13 +1995,33 @@
                     },
                     "env": [
                       {
-                        "name": "SERVER_PORT",
+                        "name": "DEBUG",
+                        "value": "False",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "PORT",
                         "value": "8080",
                         "type": "PLAINTEXT"
                       },
                       {
-                        "name": "LOGGING_LEVEL_ROOT",
-                        "value": "info",
+                        "name": "SECRET_KEY",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SECRET_KEY}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "DATABASE_URL",
+                        "value": "postgresql://${secret:${meta.variables.project}/global-secrets-base:DB_USER}:${secret:${meta.variables.project}/global-secrets-base:DB_PASS}@${output:aurora-postgres-cluster.endpoint}:5432/${secret:${meta.variables.project}/global-secrets-base:DB_NAME}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "ALLOWED_HOSTS",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_ALLOWED_HOSTS}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "DJANGO_SETTINGS_MODULE",
+                        "value": "config.settings",
                         "type": "PLAINTEXT"
                       },
                       {
@@ -2201,43 +2041,48 @@
                       },
                       {
                         "name": "DB_HOST",
-                        "value": "${output:aurora-postgres-cluster.endpoint}"
+                        "value": "${output:aurora-postgres-cluster.endpoint}",
+                        "type": "PLAINTEXT"
                       },
                       {
                         "name": "DB_PORT",
-                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
+                        "value": "5432",
+                        "type": "PLAINTEXT"
                       },
                       {
                         "name": "DB_NAME",
-                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}",
+                        "type": "SECRET"
                       },
                       {
                         "name": "DB_USER",
-                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_USER}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_USER}",
+                        "type": "SECRET"
                       },
                       {
                         "name": "DB_PASSWORD",
-                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}",
+                        "type": "SECRET"
                       },
                       {
-                        "name": "DJANGO_SECRET_KEY",
-                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SECRET_KEY}"
+                        "name": "DJANGO_SUPERUSER_EMAIL",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SUPERUSER_EMAIL}",
+                        "type": "SECRET"
                       },
                       {
-                        "name": "DJANGO_SETTINGS_MODULE",
-                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SETTINGS_MODULE}"
+                        "name": "DJANGO_SUPERUSER_PASSWORD",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SUPERUSER_PASSWORD}",
+                        "type": "SECRET"
                       },
                       {
-                        "name": "DJANGO_ALLOWED_HOSTS",
-                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_ALLOWED_HOSTS}"
-                      },
-                      {
-                        "name": "DJANGO_DEBUG",
-                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_DEBUG}"
+                        "name": "DJANGO_SUPERUSER_USERNAME",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SUPERUSER_USERNAME}",
+                        "type": "SECRET"
                       },
                       {
                         "name": "AWS_REGION",
-                        "value": "${meta.variables.region}"
+                        "value": "${meta.variables.region}",
+                        "type": "PLAINTEXT"
                       }
                     ]
                   }
@@ -2276,7 +2121,7 @@
                       "repoName": "${meta.variables.backendRepoName}",
                       "branch": "${meta.variables.backendBranch}",
                       "codestarConnectionArn": "${output:github-codestar-connection.arn}",
-                      "buildspecPath": "./assets/cicd/buildspecs/buildspec-django-be.yml",
+                      "buildspecPath": "./assets/cicd/buildspecs/buildspec-nest-be.yml",
                       "buildImage": "aws/codebuild/standard:7.0",
                       "buildTimeout": 20,
                       "privilegedMode": true,
@@ -2295,12 +2140,12 @@
                         },
                         {
                           "name": "ECR_REPO_NAME",
-                          "value": "${meta.variables.project}-be-ecr-repo",
+                          "value": "${meta.environment}-be-ecr-repo",
                           "type": "PLAINTEXT"
                         },
                         {
                           "name": "CONTAINER_NAME",
-                          "value": "be",
+                          "value": "${meta.environment}-be",
                           "type": "PLAINTEXT"
                         },
                         {
@@ -2317,16 +2162,6 @@
                           "name": "DB_NAME",
                           "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}",
                           "type": "PLAINTEXT"
-                        },
-                        {
-                          "name": "DJANGO_SETTINGS_MODULE",
-                          "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SETTINGS_MODULE}",
-                          "type": "PLAINTEXT"
-                        },
-                        {
-                          "name": "DJANGO_SECRET_KEY",
-                          "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SECRET_KEY}",
-                          "type": "SECRETS_MANAGER"
                         }
                       ],
                       "badgeEnabled": false,
@@ -2428,7 +2263,1156 @@
           }
         }
       },
+      "📁[ADMIN]": {
+        "📁[ECS]": {
+          "🧩[ADMIN]": {
+            "🟣[networking]": {
+              "l3_securityGroupsFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_admin-ecs-sg}",
+                  "id": "admin-ecs-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "ADMIN ECS SERVICE SG"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_admin-codepipelines-sg}",
+                  "id": "admin-codepipelines-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "ADMIN CODEPIPELINES SG"
+                  }
+                }
+              ],
+              "l3_securityGroupRulesFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-alb-to-ecs-admin}",
+                  "id": "from-alb-to-ecs-admin",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:admin-ecs-sg.id}",
+                    "sourceSecurityGroupId": "${output:alb-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:admin-ecs-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 8080,
+                    "toPort": 8080,
+                    "protocol": "tcp",
+                    "sourceSecurityGroupId": "${output:alb-sg.id}"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-all-to-ecs-admin}",
+                  "id": "from-egress-all-to-ecs-admin",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:admin-ecs-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:admin-ecs-sg.id}",
+                    "type": "egress",
+                    "fromPort": 0,
+                    "toPort": 0,
+                    "protocol": "-1",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ]
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-ecs-admin-to-aurora-serverless}",
+                  "id": "from-ecs-admin-to-aurora-serverless",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "sourceSecurityGroupId": "${output:admin-ecs-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:aurora-postgres-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 5432,
+                    "toPort": 5432,
+                    "protocol": "tcp",
+                    "sourceSecurityGroupId": "${output:be-ecs-sg.id}"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-ingress-vpc-to-pipeline-admin}",
+                  "id": "form-ingress-vpc-to-pipeline-admin",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:admin-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:admin-codepipelines-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS from VPC for AWS service access"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-secure-to-pipeline-admin}",
+                  "id": "from-egress-secure-to-pipeline-admin",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:admin-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:admin-codepipelines-sg.id}",
+                    "type": "egress",
+                    "fromPort": 0,
+                    "toPort": 0,
+                    "protocol": "-1",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "Allow all outbound traffic for CodePipeline"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-vpc-endpoints-to-pipeline-admin}",
+                  "id": "from-egress-vpc-endpoints-to-pipeline-admin",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:admin-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:admin-codepipelines-sg.id}",
+                    "type": "egress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS to VPC endpoints for AWS services"
+                  }
+                }
+              ]
+            },
+            "🟣[main]": {
+              "l4_ecsServiceFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_ecs-service-admin}",
+                  "id": "ecs-service-admin",
+                  "inputs": {
+                    "albListenerArn": "${output:alb.listenerArn}",
+                    "albSgId": "${output:alb-sg.id}",
+                    "sgId": "${output:admin-ecs-sg.id}",
+                    "subnets": "${output:main-networking.privateSubnetIds}",
+                    "clusterArn": "${output:ecs-cluster.arn}",
+                    "vpcId": "${output:main-networking.vpcId}",
+                    "endpoint": "endpoint",
+                    "username": "username"
+                  },
+                  "outputs": {
+                    "id": true,
+                    "name": true,
+                    "secretArn": true,
+                    "ecrRepositoryUrl": true,
+                    "ecrRepositoryArn": true
+                  },
+                  "dependsOn": [
+                    "admin-ecs-sg",
+                    "alb",
+                    "ecs-cluster"
+                  ],
+                  "configuration": {
+                    "name": "admin",
+                    "albListenerRules": [
+                      {
+                        "_comment": "NO Transform URL for admin! Django receives full path /admin/* and serves static files from /admin/static/",
+                        "priority": 101,
+                        "conditions": {
+                          "pathPatterns": [
+                            "/admin/*"
+                          ]
+                        }
+                      }
+                    ],
+                    "healthCheckPath": "/admin/health/",
+                    "healthCheckIntervalSeconds": 30,
+                    "healthCheckTimeoutSeconds": 5,
+                    "healthyThresholdCount": 2,
+                    "unhealthyThresholdCount": 5,
+                    "healthCheckGracePeriodSeconds": 300,
+                    "forceRedeploy": "${meta.microservices.MICROSERVICE_REBUILD_ADMIN}",
+                    "dockerBuild": {
+                      "context": "${meta.variables_infra.DOCKER_CONTEXT}/${meta.variables_infra.DOCKER_PROJECT_TEMPLATE}",
+                      "dockerfile": "${meta.variables_infra.DOCKERFILE}/${meta.variables_infra.DOCKER_PROJECT_TEMPLATE}/Dockerfile",
+                      "repositoryName": "${meta.variables.project}-admin-ecr-repo",
+                      "forceRebuild": true
+                    },
+                    "logging": {
+                      "retentionInDays": 365,
+                      "enabled": true,
+                      "logDriver": "awslogs",
+                      "dataProtection": {
+                        "enabled": false,
+                        "operations": {
+                          "audit": {
+                            "enabled": true,
+                            "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                          },
+                          "redaction": {
+                            "enabled": true,
+                            "maskConfig": {}
+                          }
+                        }
+                      }
+                    },
+                    "port": 8080,
+                    "desiredCount": 2,
+                    "minCapacity": 2,
+                    "maxCapacity": 4,
+                    "cpu": 2048,
+                    "memory": 4096,
+                    "autoScaling": {
+                      "enabled": true,
+                      "targetCPUUtilization": 70,
+                      "targetMemoryUtilization": 80,
+                      "scaleInCooldown": 300,
+                      "scaleOutCooldown": 300
+                    },
+                    "circuitBreaker": {
+                      "enabled": true,
+                      "enable": true,
+                      "rollback": true
+                    },
+                    "public": true,
+                    "taskRolePolicyStatements": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "ecr:*"
+                        ],
+                        "Resource": "*"
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "s3:GetObject",
+                          "s3:PutObject",
+                          "s3:DeleteObject",
+                          "s3:ListBucket"
+                        ],
+                        "Resource": [
+                          "${output:assets-bucket.arn}",
+                          "${output:assets-bucket.arn}/*"
+                        ]
+                      }
+                    ],
+                    "executionRolePolicyStatements": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "ecr:*"
+                        ],
+                        "Resource": "*"
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogGroup",
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          "arn:aws:logs:*:*:*"
+                        ]
+                      }
+                    ],
+                    "ecr": {
+                      "enabled": true,
+                      "name": "admin-ecr-repo",
+                      "imageScanningConfiguration": {
+                        "scanOnPush": true
+                      },
+                      "encryptionConfiguration": {
+                        "encryptionType": "AES256"
+                      },
+                      "imageTagMutability": "MUTABLE",
+                      "lifecyclePolicy": {
+                        "rules": [
+                          {
+                            "rulePriority": 1,
+                            "description": "Expire untagged images after 7 days",
+                            "selection": {
+                              "tagStatus": "untagged",
+                              "countType": "sinceImagePushed",
+                              "countUnit": "days",
+                              "countNumber": 7
+                            },
+                            "action": {
+                              "type": "expire"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "env": [
+                      {
+                        "name": "DJANGO_STATIC_URL",
+                        "value": "/admin/static/",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "DEBUG",
+                        "value": "False",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "PORT",
+                        "value": "8080",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "SECRET_KEY",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SECRET_KEY}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "DATABASE_URL",
+                        "value": "postgresql://${secret:${meta.variables.project}/global-secrets-base:DB_USER}:${secret:${meta.variables.project}/global-secrets-base:DB_PASS}@${output:aurora-postgres-cluster.endpoint}:5432/${secret:${meta.variables.project}/global-secrets-base:DB_NAME}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "ALLOWED_HOSTS",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_ALLOWED_HOSTS}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "DJANGO_SETTINGS_MODULE",
+                        "value": "config.settings",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "APP_NAME",
+                        "value": "${meta.variables.project}",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "APP_BACKEND_URL",
+                        "value": "https://api.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/be",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "APP_FRONTEND_URL",
+                        "value": "https://app.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "DB_HOST",
+                        "value": "${output:aurora-postgres-cluster.endpoint}",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "DB_PORT",
+                        "value": "5432",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "DB_NAME",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "DB_USER",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_USER}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "DB_PASSWORD",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "DJANGO_SUPERUSER_EMAIL",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SUPERUSER_EMAIL}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "DJANGO_SUPERUSER_PASSWORD",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SUPERUSER_PASSWORD}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "DJANGO_SUPERUSER_USERNAME",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SUPERUSER_USERNAME}",
+                        "type": "SECRET"
+                      },
+                      {
+                        "name": "AWS_REGION",
+                        "value": "${meta.variables.region}",
+                        "type": "PLAINTEXT"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "🟣[cicd]": {
+              "l4_enhancedEcsCodePipelineFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_pipeline-ecs-service-admin}",
+                  "id": "pipeline-ecs-service-admin",
+                  "type": "ecs",
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}",
+                    "subnetIds": "${output:main-networking.privateSubnetIds}",
+                    "securityGroupIds": [
+                      "${output:admin-codepipelines-sg.id}"
+                    ]
+                  },
+                  "outputs": {
+                    "pipelineArn": true,
+                    "pipelineName": true,
+                    "pipelineUrl": true,
+                    "notificationEventRuleName": true,
+                    "arn": true,
+                    "name": true,
+                    "url": true,
+                    "codebuildProjectName": true,
+                    "notificationEventRuleArn": true,
+                    "notificationRuleArn": true
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "pipeline": {
+                      "repoOwner": "${meta.variables.adminRepoOwner}",
+                      "repoName": "${meta.variables.adminRepoName}",
+                      "branch": "${meta.variables.adminBranch}",
+                      "codestarConnectionArn": "${output:github-codestar-connection.arn}",
+                      "buildspecPath": "./assets/cicd/buildspecs/buildspec-django-admin.yml",
+                      "buildImage": "aws/codebuild/standard:7.0",
+                      "buildTimeout": 20,
+                      "privilegedMode": true,
+                      "computeType": "BUILD_GENERAL1_LARGE",
+                      "environmentType": "LINUX_CONTAINER",
+                      "buildEnvironmentVariables": [
+                        {
+                          "name": "AWS_ACCOUNT_ID",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:ACCOUNT_ID}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "AWS_DEFAULT_REGION",
+                          "value": "${meta.variables.region}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "ECR_REPO_NAME",
+                          "value": "${meta.environment}-admin-ecr-repo",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "CONTAINER_NAME",
+                          "value": "${meta.environment}-admin",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DB_HOST",
+                          "value": "${output:aurora-postgres-cluster.endpoint}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DB_PORT",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DB_NAME",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DJANGO_SETTINGS_MODULE",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SETTINGS_MODULE}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "DJANGO_SECRET_KEY",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:DJANGO_SECRET_KEY}",
+                          "type": "PLAINTEXT"
+                        }
+                      ],
+                      "badgeEnabled": false,
+                      "s3BucketForceDestroy": true,
+                      "githubWebhookEvents": [
+                        "push"
+                      ],
+                      "pollSourceChanges": false,
+                      "webhookEnabled": false,
+                      "ecsClusterName": "${output:ecs-cluster.name}",
+                      "ecsServiceName": "${output:ecs-service-admin.name}",
+                      "deployCodePipelineInVpc": true,
+                      "tags": {
+                        "Project": "${meta.variables.project}",
+                        "Environment": "${meta.environment}",
+                        "Owner": "${meta.variables.owner}",
+                        "NotificationEnabled": "true"
+                      },
+                      "ecrRepositoryName": "${meta.variables.project}-admin-ecr-repo"
+                    },
+                    "cloudwatchLogsDataProtection": {
+                      "enabled": false,
+                      "enableAudit": true,
+                      "enableRedaction": true,
+                      "dataIdentifiers": [
+                        "arn:aws:dataprotection::aws:data-identifier/EmailAddress",
+                        "arn:aws:dataprotection::aws:data-identifier/AwsSecretKey",
+                        "arn:aws:dataprotection::aws:data-identifier/IpAddress"
+                      ],
+                      "operations": {
+                        "audit": {
+                          "enabled": true,
+                          "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                        },
+                        "redaction": {
+                          "enabled": true,
+                          "maskConfig": {
+                            "MaskConfig": {}
+                          }
+                        }
+                      }
+                    },
+                    "notifications": {
+                      "enabled": false,
+                      "useNotificationRules": true,
+                      "snsTopicArn": "${output:pipeline-notifications.topicArn}",
+                      "notificationEventTypes": [
+                        "codepipeline-pipeline-pipeline-execution-started",
+                        "codepipeline-pipeline-pipeline-execution-succeeded",
+                        "codepipeline-pipeline-pipeline-execution-failed",
+                        "codepipeline-pipeline-stage-execution-failed",
+                        "codepipeline-pipeline-manual-approval-needed"
+                      ],
+                      "notificationDetailType": "FULL",
+                      "eventTypes": [
+                        "PIPELINE_EXECUTION_STARTED",
+                        "PIPELINE_EXECUTION_SUCCEEDED",
+                        "PIPELINE_EXECUTION_FAILED",
+                        "STAGE_EXECUTION_FAILED"
+                      ],
+                      "detailType": "Full",
+                      "successNotifications": true,
+                      "failureNotifications": true,
+                      "startNotifications": true
+                    },
+                    "environment": [
+                      {
+                        "name": "DB_HOST",
+                        "value": "${output:aurora-postgres-cluster.endpoint}"
+                      },
+                      {
+                        "name": "DB_PORT",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
+                      },
+                      {
+                        "name": "DB_NAME",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_NAME}"
+                      },
+                      {
+                        "name": "DB_USER",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_USER}"
+                      },
+                      {
+                        "name": "DB_PASSWORD",
+                        "value": "${secret:${meta.variables.project}/global-secrets-base:DB_PASS}"
+                      }
+                    ]
+                  },
+                  "tags": {
+                    "Project": "${meta.variables.project}",
+                    "Environment": "${meta.environment}",
+                    "Owner": "${meta.variables.owner}",
+                    "Service": "Admin",
+                    "PipelineType": "ECS"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
       "📁[FE]": {
+        "📁[ECS]": {
+          "🧩[FE]": {
+            "🟣[networking]": {
+              "l3_securityGroupsFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_fe-ecs-sg}",
+                  "id": "fe-ecs-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "FE ECS SERVICE SG"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_fe-codepipelines-sg}",
+                  "id": "fe-codepipelines-sg",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "description": "FE CODEPIPELINES SG"
+                  }
+                }
+              ],
+              "l3_securityGroupRulesFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-alb-to-ecs-fe}",
+                  "id": "from-alb-to-ecs-fe",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:fe-ecs-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:fe-ecs-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 3000,
+                    "toPort": 3000,
+                    "protocol": "tcp",
+                    "sourceSecurityGroupId": "${output:alb-sg.id}",
+                    "description": "ALB to FE ECS"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-all-to-ecs-fe}",
+                  "id": "from-egress-all-to-ecs-fe",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:fe-ecs-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:fe-ecs-sg.id}",
+                    "type": "egress",
+                    "fromPort": 0,
+                    "toPort": 65535,
+                    "protocol": "-1",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "All outbound from FE ECS"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-ingress-vpc-to-pipeline-fe}",
+                  "id": "form-ingress-vpc-to-pipeline-fe",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:fe-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:fe-codepipelines-sg.id}",
+                    "type": "ingress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS from VPC for AWS service access"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-secure-to-pipeline-fe}",
+                  "id": "from-egress-secure-to-pipeline-fe",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:fe-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:fe-codepipelines-sg.id}",
+                    "type": "egress",
+                    "fromPort": 0,
+                    "toPort": 0,
+                    "protocol": "-1",
+                    "cidrBlocks": [
+                      "0.0.0.0/0"
+                    ],
+                    "description": "Allow all outbound traffic for CodePipeline"
+                  }
+                },
+                {
+                  "enabled": "${meta.featureFlags.FLAG_from-egress-vpc-endpoints-to-pipeline-fe}",
+                  "id": "from-egress-vpc-endpoints-to-pipeline-fe",
+                  "outputs": {
+                    "id": true
+                  },
+                  "inputs": {
+                    "securityGroupId": "${output:fe-codepipelines-sg.id}"
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "securityGroupId": "${output:fe-codepipelines-sg.id}",
+                    "type": "egress",
+                    "fromPort": 443,
+                    "toPort": 443,
+                    "protocol": "tcp",
+                    "cidrBlocks": [
+                      "${meta.variables.cidrMain}"
+                    ],
+                    "description": "HTTPS to VPC endpoints for AWS services"
+                  }
+                }
+              ]
+            },
+            "🟣[main]": {
+              "l4_ecsServiceFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_ecs-service-fe}",
+                  "id": "ecs-service-fe",
+                  "inputs": {
+                    "albListenerArn": "${output:alb.listenerArn}",
+                    "albSgId": "${output:alb-sg.id}",
+                    "sgId": "${output:fe-ecs-sg.id}",
+                    "subnets": "${output:main-networking.privateSubnetIds}",
+                    "clusterArn": "${output:ecs-cluster.arn}",
+                    "vpcId": "${output:main-networking.vpcId}",
+                    "endpoint": "endpoint",
+                    "username": "username"
+                  },
+                  "outputs": {
+                    "id": true,
+                    "name": true,
+                    "secretArn": true,
+                    "ecrRepositoryUrl": true,
+                    "ecrRepositoryArn": true
+                  },
+                  "dependsOn": [
+                    "fe-ecs-sg",
+                    "alb",
+                    "ecs-cluster"
+                  ],
+                  "configuration": {
+                    "name": "fe",
+                    "albListenerRules": [
+                      {
+                        "_comment": "Transform URL for /fe (without trailing slash) - redirect to root path",
+                        "priority": 104,
+                        "conditions": {
+                          "pathPatterns": [
+                            "/fe"
+                          ]
+                        },
+                        "transforms": [
+                          {
+                            "type": "url-rewrite",
+                            "urlRewriteConfig": {
+                              "rewrite": {
+                                "regex": "^/fe$",
+                                "replace": "/"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "_comment": "Transform URL for /fe/* (with trailing slash) - strips /fe prefix from incoming requests before forwarding to Next.js container. Pulumi AWS provider uses urlRewriteConfig (not type field) to apply URL transforms.",
+                        "priority": 105,
+                        "conditions": {
+                          "pathPatterns": [
+                            "/fe/*"
+                          ]
+                        },
+                        "transforms": [
+                          {
+                            "type": "url-rewrite",
+                            "urlRewriteConfig": {
+                              "rewrite": {
+                                "regex": "^/fe(/.*)$",
+                                "replace": "$1"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ],
+                    "healthCheckPath": "/api/health",
+                    "healthCheckIntervalSeconds": 30,
+                    "healthCheckTimeoutSeconds": 5,
+                    "healthyThresholdCount": 2,
+                    "unhealthyThresholdCount": 5,
+                    "healthCheckGracePeriodSeconds": 300,
+                    "forceRedeploy": "${meta.microservices.MICROSERVICE_REBUILD_FE}",
+                    "dockerBuild": {
+                      "context": "${meta.variables_infra.DOCKER_CONTEXT_FE}",
+                      "dockerfile": "${meta.variables_infra.DOCKERFILE_FE}/Dockerfile",
+                      "repositoryName": "${meta.variables.project}-fe-ecr-repo",
+                      "forceRebuild": true
+                    },
+                    "logging": {
+                      "retentionInDays": 365,
+                      "enabled": true,
+                      "logDriver": "awslogs",
+                      "dataProtection": {
+                        "enabled": false,
+                        "operations": {
+                          "audit": {
+                            "enabled": true,
+                            "logGroup": "/aws/logs/audit/${meta.variables.project}-${meta.environment}"
+                          },
+                          "redirection": {
+                            "enabled": true,
+                            "maskConfig": {}
+                          }
+                        }
+                      }
+                    },
+                    "port": 3000,
+                    "desiredCount": 2,
+                    "minCapacity": 2,
+                    "maxCapacity": 4,
+                    "cpu": 1024,
+                    "memory": 2048,
+                    "autoScaling": {
+                      "enabled": true,
+                      "targetCPUUtilization": 70,
+                      "targetMemoryUtilization": 80,
+                      "scaleInCooldown": 300,
+                      "scaleOutCooldown": 300
+                    },
+                    "circuitBreaker": {
+                      "enabled": true,
+                      "enable": true,
+                      "rollback": true
+                    },
+                    "public": true,
+                    "taskRolePolicyStatements": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "ecr:*"
+                        ],
+                        "Resource": "*"
+                      }
+                    ],
+                    "executionRolePolicyStatements": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "ecr:*"
+                        ],
+                        "Resource": "*"
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogGroup",
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": [
+                          "arn:aws:logs:*:*:*"
+                        ]
+                      }
+                    ],
+                    "ecr": {
+                      "enabled": true,
+                      "name": "fe-ecr-repo",
+                      "imageTagMutability": "MUTABLE",
+                      "imageScanningOnPush": true,
+                      "lifecyclePolicy": {
+                        "rules": [
+                          {
+                            "rulePriority": 1,
+                            "description": "Keep last 10 production images",
+                            "selection": {
+                              "tagStatus": "tagged",
+                              "tagPrefixList": [
+                                "prod"
+                              ],
+                              "countType": "imageCountMoreThan",
+                              "countNumber": 10
+                            },
+                            "action": {
+                              "type": "expire"
+                            }
+                          },
+                          {
+                            "rulePriority": 2,
+                            "description": "Keep last 5 dev images",
+                            "selection": {
+                              "tagStatus": "tagged",
+                              "tagPrefixList": [
+                                "dev"
+                              ],
+                              "countType": "imageCountMoreThan",
+                              "countNumber": 5
+                            },
+                            "action": {
+                              "type": "expire"
+                            }
+                          },
+                          {
+                            "rulePriority": 3,
+                            "description": "Delete untagged images after 1 day",
+                            "selection": {
+                              "tagStatus": "untagged",
+                              "countType": "sinceImagePushed",
+                              "countUnit": "days",
+                              "countNumber": 1
+                            },
+                            "action": {
+                              "type": "expire"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    "environmentVariables": [
+                      {
+                        "name": "NODE_ENV",
+                        "value": "${meta.environment}",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "NEXT_PUBLIC_WEB_URL",
+                        "value": "https://application.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "NEXT_PUBLIC_API_URL",
+                        "value": "https://application.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "NEXT_PUBLIC_FRONTEND_PREFIX",
+                        "value": "/fe",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "NEXT_PUBLIC_API_PREFIX",
+                        "value": "/api",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "NEXT_PUBLIC_ADMIN_PREFIX",
+                        "value": "/admin",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "NEXT_PUBLIC_APP_ENV",
+                        "value": "${meta.environment}",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "PORT",
+                        "value": "3000",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "HOSTNAME",
+                        "value": "0.0.0.0",
+                        "type": "PLAINTEXT"
+                      },
+                      {
+                        "name": "AWS_REGION",
+                        "value": "${meta.variables.region}",
+                        "type": "PLAINTEXT"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "🟣[cicd]": {
+              "l4_enhancedEcsCodePipelineFactory": [
+                {
+                  "enabled": "${meta.featureFlags.FLAG_pipeline-ecs-service-fe}",
+                  "id": "pipeline-ecs-service-fe",
+                  "type": "ecs",
+                  "inputs": {
+                    "vpcId": "${output:main-networking.vpcId}",
+                    "subnetIds": "${output:main-networking.privateSubnetIds}",
+                    "securityGroupIds": [
+                      "${output:fe-codepipelines-sg.id}"
+                    ]
+                  },
+                  "outputs": {
+                    "pipelineArn": true,
+                    "pipelineName": true,
+                    "pipelineUrl": true,
+                    "notificationEventRuleName": true,
+                    "arn": true,
+                    "name": true,
+                    "url": true,
+                    "codebuildProjectName": true,
+                    "notificationEventRuleArn": true,
+                    "notificationRuleArn": true
+                  },
+                  "dependsOn": [],
+                  "configuration": {
+                    "pipeline": {
+                      "repoOwner": "${meta.variables.frontendRepoOwner}",
+                      "repoName": "${meta.variables.frontendRepoName}",
+                      "branch": "${meta.variables.frontendBranch}",
+                      "codestarConnectionArn": "${output:github-codestar-connection.arn}",
+                      "buildspecPath": "./assets/cicd/buildspecs/buildspec-next-fe.yml",
+                      "buildImage": "${meta.variables_infra.CODEBUILD_IMAGE}",
+                      "buildTimeout": 21,
+                      "privilegedMode": true,
+                      "ecrRepositoryName": "${meta.environment}-fe-ecr-repo",
+                      "buildEnvironmentVariables": [
+                        {
+                          "name": "AWS_DEFAULT_REGION",
+                          "value": "${meta.variables.region}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "AWS_ACCOUNT_ID",
+                          "value": "${secret:${meta.variables.project}/global-secrets-base:AWS_ACCOUNT_ID}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "IMAGE_REPO_NAME",
+                          "value": "${meta.environment}-fe-ecr-repo",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "ECS_SERVICE_NAME",
+                          "value": "fe",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "ECS_CLUSTER_NAME",
+                          "value": "${output:ecs-cluster.name}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "CONTAINER_NAME",
+                          "value": "${meta.environment}-fe",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "BUILD_CONTEXT_PATH",
+                          "value": "${meta.variables_infra.DOCKER_CONTEXT_FE}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "NODE_ENV",
+                          "value": "${meta.environment}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "NEXT_PUBLIC_WEB_URL",
+                          "value": "https://application.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "NEXT_PUBLIC_API_URL",
+                          "value": "https://application.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "NEXT_PUBLIC_FRONTEND_PREFIX",
+                          "value": "/fe",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "NEXT_PUBLIC_API_PREFIX",
+                          "value": "/api",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "NEXT_PUBLIC_ADMIN_PREFIX",
+                          "value": "/admin",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "NEXT_PUBLIC_APP_ENV",
+                          "value": "${meta.environment}",
+                          "type": "PLAINTEXT"
+                        }
+                      ],
+                      "ecsClusterName": "${output:ecs-cluster.name}",
+                      "ecsServiceName": "${output:ecs-service-fe.name}",
+                      "outputArtifactFormat": "CODE_ZIP",
+                      "pollSourceChanges": true,
+                      "deployCodePipelineInVpc": true,
+                      "tags": {
+                        "Project": "${meta.variables.project}",
+                        "Environment": "${meta.environment}",
+                        "Owner": "${meta.variables.owner}",
+                        "Service": "Frontend",
+                        "PipelineType": "ECS"
+                      }
+                    }
+                  },
+                  "tags": {
+                    "Project": "${meta.variables.project}",
+                    "Environment": "${meta.environment}",
+                    "Owner": "${meta.variables.owner}",
+                    "Service": "Frontend",
+                    "PipelineType": "ECS"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "📁[LANDING]": {
         "📁[STATIC]": {
           "🧩[CLOUDFRONT]": {
             "🟣[networking]": {
@@ -2484,13 +3468,13 @@
                   "configuration": {
                     "securityGroupId": "${output:cloudfront-codepipeline-sg.id}",
                     "type": "egress",
-                    "fromPort": 443,
-                    "toPort": 443,
-                    "protocol": "tcp",
+                    "fromPort": 0,
+                    "toPort": 0,
+                    "protocol": "-1",
                     "cidrBlocks": [
                       "0.0.0.0/0"
                     ],
-                    "description": "HTTPS to internet for GitHub and npm packages"
+                    "description": "Allow all outbound traffic for CodePipeline"
                   }
                 },
                 {
@@ -2769,22 +3753,38 @@
                   ],
                   "configuration": {
                     "pipeline": {
-                      "repoOwner": "${meta.variables.frontendRepoOwner}",
-                      "repoName": "${meta.variables.frontendRepoName}",
-                      "branch": "${meta.variables.frontendBranch}",
+                      "repoOwner": "${meta.variables.landingRepoOwner}",
+                      "repoName": "${meta.variables.landingRepoName}",
+                      "branch": "${meta.variables.landingBranch}",
                       "codestarConnectionArn": "${output:github-codestar-connection.arn}",
-                      "buildspecPath": "./assets/cicd/buildspecs/buildspec-frontend.yml",
-                      "buildImage": "aws/codebuild/amazonlinux2-x86_64-standard:5.0",
-                      "buildTimeout": 21,
+                      "buildspecPath": "./assets/cicd/buildspecs/buildspec-landing.yml",
+                      "buildImage": "aws/codebuild/standard:7.0",
+                      "buildTimeout": 15,
+                      "forceRedeploy": "${meta.microservices.MICROSERVICE_REBUILD_LANDING}",
                       "buildEnvironmentVariables": [
                         {
-                          "name": "VITE_API_URL",
-                          "value": "https://api.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/be/api/v1/",
+                          "name": "VITE_APP_URL",
+                          "value": "https://app.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}",
                           "type": "PLAINTEXT"
                         },
                         {
-                          "name": "VITE_API_NO_API_VER",
-                          "value": "https://api.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/be/",
+                          "name": "VITE_FE_URL",
+                          "value": "https://application.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/fe",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "VITE_API_URL",
+                          "value": "https://application.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/api",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "VITE_ADMIN_URL",
+                          "value": "https://application.${meta.environment}.${secret:${meta.variables.project}/global-secrets-base:DNS}/admin",
+                          "type": "PLAINTEXT"
+                        },
+                        {
+                          "name": "VITE_ENVIRONMENT",
+                          "value": "${meta.environment}",
                           "type": "PLAINTEXT"
                         },
                         {
@@ -2804,37 +3804,12 @@
                         },
                         {
                           "name": "NODE_ENV",
-                          "value": "${meta.environment}",
+                          "value": "production",
                           "type": "PLAINTEXT"
                         },
                         {
-                          "name": "SONAR_ENABLED",
-                          "value": "true",
-                          "type": "PLAINTEXT"
-                        },
-                        {
-                          "name": "SONAR_PROJECT_KEY",
-                          "value": "${meta.variables.project}_${meta.variables.project}-frontend",
-                          "type": "PLAINTEXT"
-                        },
-                        {
-                          "name": "SONAR_PROJECT_KEY_SECRET",
-                          "value": "${secret:${meta.variables.project}/global-secrets-base:SONAR_PROJECT_KEY}",
-                          "type": "PLAINTEXT"
-                        },
-                        {
-                          "name": "SONAR_ORGANIZATION",
-                          "value": "${secret:${meta.variables.project}/global-secrets-base:SONAR_ORGANIZATION}",
-                          "type": "PLAINTEXT"
-                        },
-                        {
-                          "name": "SONAR_TOKEN",
-                          "value": "${secret:${meta.variables.project}/global-secrets-base:SONAR_TOKEN}",
-                          "type": "PLAINTEXT"
-                        },
-                        {
-                          "name": "VITE_ENV",
-                          "value": "${meta.environment}",
+                          "name": "S3_BUCKET",
+                          "value": "${meta.variables.project}-${meta.environment}-cloudfront-bucket",
                           "type": "PLAINTEXT"
                         }
                       ],
@@ -2913,6 +3888,9 @@
           }
         }
       }
+    },
+    "etc": {
+      "secrets_outputs": {}
     }
   }
 }
